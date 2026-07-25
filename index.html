@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zensavita - Sistema de Gestión</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -57,7 +56,9 @@
             display: flex; align-items: center; gap: 0.5rem;
         }
         .sync-indicator.synced { background: var(--success); color: white; }
+        .sync-indicator.syncing { background: var(--warning); color: white; animation: pulse 1s infinite; }
         .sync-indicator.offline { background: var(--error); color: white; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         .profile-badge { padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; font-size: 0.9rem; color: white; background: var(--primary); }
         .btn-logout { padding: 0.5rem 1rem; background: var(--error); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .nav-tabs { background: white; display: flex; border-bottom: 2px solid var(--border); padding: 0 2rem; overflow-x: auto; }
@@ -131,7 +132,6 @@
     </style>
 </head>
 <body>
-    <!-- SELECTOR PERFIL -->
     <div class="profile-selector" id="profileSelector">
         <div class="profile-card">
             <h1>🌿 Zensavita</h1>
@@ -143,7 +143,6 @@
         </div>
     </div>
 
-    <!-- APP PRINCIPAL -->
     <div class="main-app" id="mainApp">
         <header>
             <h1>🌿 Zensavita</h1>
@@ -162,7 +161,6 @@
         </div>
 
         <div class="content">
-            <!-- INVENTARIO -->
             <div class="section active" id="inventario">
                 <h2>📦 Inventario</h2>
                 <div class="search-box">
@@ -178,19 +176,17 @@
                 </div>
             </div>
 
-            <!-- GESTIÓN -->
             <div class="section" id="gestion">
                 <h2>⚙️ Gestión de Inventario</h2>
                 <button class="btn btn-primary" onclick="window.openAddProductModal(); return false;" style="margin-bottom: 2rem;">+ Agregar Producto</button>
                 <div class="inventory-table">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--primary); color: white; border-radius: 8px; margin-bottom: 1rem; font-weight: 600; position: sticky; top: 0;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--primary); color: white; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;">
                         <div>Producto</div><div>Cantidad</div><div>Precio</div><div></div>
                     </div>
                     <div id="managementBody"></div>
                 </div>
             </div>
 
-            <!-- REGISTRAR VENTA -->
             <div class="section" id="venta">
                 <h2>💰 Registrar Venta</h2>
                 <div class="form-section">
@@ -229,7 +225,6 @@
                 <button class="btn btn-primary btn-full" id="registerSaleBtn" style="display: none;" onclick="window.confirmSale(); return false;">Registrar Venta</button>
             </div>
 
-            <!-- INGRESOS -->
             <div class="section" id="ingresos">
                 <h2>📊 Ingresos y Ventas</h2>
                 <div class="charts-container">
@@ -264,7 +259,6 @@
         </div>
     </div>
 
-    <!-- MODALES -->
     <div class="modal" id="confirmModal">
         <div class="modal-content">
             <h2>Confirmar Venta</h2>
@@ -279,6 +273,10 @@
     <div class="modal" id="addProductModal">
         <div class="modal-content">
             <h2>Agregar Producto</h2>
+            <div class="form-group">
+                <label for="newProductSku">SKU</label>
+                <input type="text" id="newProductSku" placeholder="Ej: SKU-100">
+            </div>
             <div class="form-group">
                 <label for="newProductName">Nombre Producto</label>
                 <input type="text" id="newProductName" placeholder="Ej: Vitamina C">
@@ -299,168 +297,59 @@
     </div>
 
     <script>
-        // ============ CONFIGURACIÓN SUPABASE - ÚNICA DECLARACIÓN ============
-        const SUPABASE_URL = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_sx8C7YLNQezLjtEPYCqe1Q_IhWXzuAk';
-        
-        let sbClient = null;
-        try {
-            sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            console.log('✅ Supabase conectado');
-        } catch (e) {
-            console.log('⚠️ Supabase no disponible, usando localStorage');
-        }
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzhLWsZOmmzfuMEUdoPASc8O8LOE8m3TvFIvtl6g4LHXZexv3lNhYEDaz2VAKjgATZ8/exec';
 
-        // ============ ESTADO GLOBAL ============
         let currentProfile = null;
         let inventory = [];
-        let ventasDoctora = [];
-        let ventasZensavita = [];
+        let ventas = [];
         let selectedProduct = null;
         let cart = [];
         let ingresoChart = null;
         let unitsChart = null;
+        let syncInterval = null;
 
-        const INVENTARIO_INICIAL = [
-            { nombre: 'FLEXIMAX', cantidad: 10, precio: 77.9 },
-            { nombre: 'ADON-D6', cantidad: 10, precio: 42.9 },
-            { nombre: 'AESC-D15', cantidad: 10, precio: 47.9 },
-            { nombre: 'AGN-D30', cantidad: 9, precio: 36.9 },
-            { nombre: 'AGN-D6', cantidad: 9, precio: 42.9 },
-            { nombre: 'ALOGEN', cantidad: 8, precio: 93.9 },
-            { nombre: 'ALOREX', cantidad: 7, precio: 39.9 },
-            { nombre: 'ALOVERO', cantidad: 5, precio: 93.9 },
-            { nombre: 'ANTICOLESTEROL', cantidad: 2, precio: 38.9 },
-            { nombre: 'ARGENTUM-METALLICUM', cantidad: 8, precio: 36.9 },
-            { nombre: 'ARN-D6', cantidad: 10, precio: 42.9 },
-            { nombre: 'ARCT-LAP-D6', cantidad: 13, precio: 42.9 },
-            { nombre: 'ARTRIN', cantidad: 2, precio: 15.0 },
-            { nombre: 'ASHWAGANDHA-ADAPTOGEN', cantidad: 9, precio: 77.9 },
-            { nombre: 'ATHOS', cantidad: 9, precio: 30.0 },
-            { nombre: 'BACTEFIN', cantidad: 16, precio: 29.9 },
-            { nombre: 'BAR-C-D6', cantidad: 5, precio: 42.9 },
-            { nombre: 'BARIUM-CARB-D30', cantidad: 10, precio: 36.9 },
-            { nombre: 'BERB-V-D10', cantidad: 11, precio: 42.9 },
-            { nombre: 'BERB-V D6', cantidad: 5, precio: 42.9 },
-            { nombre: 'BROM D6', cantidad: 15, precio: 42.9 },
-            { nombre: 'BRY D6', cantidad: 3, precio: 42.9 },
-            { nombre: 'VITAMINA C-1000', cantidad: 5, precio: 77.9 },
-            { nombre: 'CALANCHOE', cantidad: 10, precio: 149.9 },
-            { nombre: 'CALCIO NUTRITIVO', cantidad: 0, precio: 77.9 },
-            { nombre: 'CARB-V D30', cantidad: 4, precio: 36.9 },
-            { nombre: 'CDS', cantidad: 7, precio: 70.0 },
-            { nombre: 'CHANCAPIEDRA', cantidad: 2, precio: 63.9 },
-            { nombre: 'CHELIN D30', cantidad: 2, precio: 36.9 },
-            { nombre: 'CHOL D15', cantidad: 14, precio: 47.9 },
-            { nombre: 'CIMIC D6', cantidad: 11, precio: 42.9 },
-            { nombre: 'COLA DE CABALLO', cantidad: 1, precio: 38.9 },
-            { nombre: 'COLAGEL', cantidad: 1, precio: 63.9 },
-            { nombre: 'COLONDEX', cantidad: 7, precio: 36.9 },
-            { nombre: 'MAGNESIO COMPLEX 3-1', cantidad: 6, precio: 77.9 },
-            { nombre: 'CREMA XYLITOL', cantidad: 3, precio: 0 },
-            { nombre: 'CREMA MANOS ALOE', cantidad: 3, precio: 35.9 },
-            { nombre: 'CHROMIUM PICO D6', cantidad: 12, precio: 42.9 },
-            { nombre: 'CURC-L D15', cantidad: 8, precio: 47.9 },
-            { nombre: 'VITAMINA D3 + K2', cantidad: 5, precio: 99.9 },
-            { nombre: 'DESINTOXICANTE ESPECIAL', cantidad: 1, precio: 93.9 },
-            { nombre: 'DIVE-HER', cantidad: 1, precio: 108.9 },
-            { nombre: 'DO ARTRO', cantidad: 12, precio: 34.9 },
-            { nombre: 'ESCOBITA', cantidad: 3, precio: 15.9 },
-            { nombre: 'FATICEB', cantidad: 6, precio: 89.9 },
-            { nombre: 'FEDEREX', cantidad: 5, precio: 89.9 },
-            { nombre: 'FRÍO GEL', cantidad: 20, precio: 8.9 },
-            { nombre: 'GABA', cantidad: 4, precio: 82.9 },
-            { nombre: 'ARN D30', cantidad: 8, precio: 36.9 },
-            { nombre: 'GLOBULOS IGN 1000CH', cantidad: 3, precio: 36.9 },
-            { nombre: 'GLOBULOS IGN 200CH', cantidad: 11, precio: 36.9 },
-            { nombre: 'GLOBULOS LAV D30', cantidad: 2, precio: 36.9 },
-            { nombre: 'GLOBULOS PASSI D30', cantidad: 10, precio: 36.9 },
-            { nombre: 'SPIG D30', cantidad: 4, precio: 36.9 },
-            { nombre: 'STRAM D30', cantidad: 6, precio: 36.9 },
-            { nombre: 'GLUCOSAMINE', cantidad: 6, precio: 82.9 },
-            { nombre: 'HAM D10', cantidad: 16, precio: 42.9 },
-            { nombre: 'HERICIUM D6', cantidad: 4, precio: 99.9 },
-            { nombre: 'HOLLY', cantidad: 2, precio: 42.9 },
-            { nombre: 'HYPER D6', cantidad: 8, precio: 42.9 },
-            { nombre: 'IGN 1000CH', cantidad: 4, precio: 36.9 },
-            { nombre: 'IGN 200CH', cantidad: 10, precio: 36.9 },
-            { nombre: 'INOS D30', cantidad: 11, precio: 36.9 },
-            { nombre: 'IODUM D8', cantidad: 7, precio: 36.9 },
-            { nombre: 'JAL D12', cantidad: 2, precio: 39.9 },
-            { nombre: 'K + MAG', cantidad: 12, precio: 81.9 },
-            { nombre: 'LAV D6', cantidad: 6, precio: 42.9 },
-            { nombre: 'LIONS MANE', cantidad: 7, precio: 72.9 },
-            { nombre: 'L-THEANINE LIPOSOMAL', cantidad: 3, precio: 77.9 },
-            { nombre: 'LIVER', cantidad: 5, precio: 74.9 },
-            { nombre: 'LUFFA NASAL (SPRAY)', cantidad: 5, precio: 42.9 },
-            { nombre: 'MACA-LIFE', cantidad: 1, precio: 89.9 },
-            { nombre: 'CITRATO DE MAGNESIO', cantidad: 7, precio: 77.9 },
-            { nombre: 'MAGNESIUM CITRICUM D15', cantidad: 3, precio: 47.9 },
-            { nombre: 'MAGNESIUM GLYCINATE', cantidad: 4, precio: 81.9 },
-            { nombre: 'MAGNESIUM L-THREONATE', cantidad: 9, precio: 77.9 },
-            { nombre: 'MAXIGEN COLÁGENO', cantidad: 8, precio: 77.9 },
-            { nombre: 'MELIS D6', cantidad: 5, precio: 42.9 },
-            { nombre: 'MULTVTA MAGNESIO', cantidad: 12, precio: 82.9 },
-            { nombre: 'NERVIOVIT', cantidad: 28, precio: 36.9 },
-            { nombre: 'NUX-V D10', cantidad: 27, precio: 42.9 },
-            { nombre: 'OIL OREGANO', cantidad: 7, precio: 72.9 },
-            { nombre: 'Omega 3', cantidad: 4, precio: 68.9 },
-            { nombre: 'PAEON D10', cantidad: 3, precio: 39.9 },
-            { nombre: 'PASSI D8', cantidad: 9, precio: 36.9 },
-            { nombre: 'PEUMUS D10', cantidad: 10, precio: 42.9 },
-            { nombre: 'PINE', cantidad: 1, precio: 42.9 },
-            { nombre: 'POTASIUM CITRATE', cantidad: 1, precio: 72.9 },
-            { nombre: 'PROBIOTICO 50 BILLON', cantidad: 3, precio: 95.9 },
-            { nombre: 'PLUS D6', cantidad: 5, precio: 42.9 },
-            { nombre: 'RELIEF', cantidad: 3, precio: 39.9 },
-            { nombre: 'ROMPEQUISTES', cantidad: 8, precio: 40.9 },
-            { nombre: 'SABAD D30', cantidad: 3, precio: 36.9 },
-            { nombre: 'SABAL D6', cantidad: 5, precio: 42.9 },
-            { nombre: 'SALES DE SCHUSSLER', cantidad: 7, precio: 63.9 },
-            { nombre: 'SAMB 5CH', cantidad: 1, precio: 36.9 },
-            { nombre: 'SANG D30', cantidad: 13, precio: 36.9 },
-            { nombre: 'SANGRE DE DRAGO', cantidad: 14, precio: 36.9 },
-            { nombre: 'SAW PALMETTO', cantidad: 1, precio: 74.9 },
-            { nombre: 'SEL D15', cantidad: 13, precio: 47.9 },
-            { nombre: 'SERENOS LHA', cantidad: 18, precio: 61.9 },
-            { nombre: 'SET HOMEOPATICO', cantidad: 5, precio: 89.9 },
-            { nombre: 'SILIMARINA D15', cantidad: 7, precio: 47.9 },
-            { nombre: 'STICT D10', cantidad: 7, precio: 42.9 },
-            { nombre: 'STRAM D6', cantidad: 9, precio: 42.9 },
-            { nombre: 'SULFOXI', cantidad: 5, precio: 47.9 },
-            { nombre: 'SUPOSITORIOS 9CH', cantidad: 1, precio: 35.9 },
-            { nombre: 'VERAT D6', cantidad: 1, precio: 36.9 },
-            { nombre: '12 VIALES BEBIBLES', cantidad: 5, precio: 89.9 },
-            { nombre: 'VIB D6', cantidad: 2, precio: 42.9 },
-            { nombre: 'VINAGRE DE MANZANA', cantidad: 6, precio: 77.9 },
-            { nombre: 'WALNUT', cantidad: 1, precio: 42.9 },
-            { nombre: 'CORDYCEPS D6', cantidad: 5, precio: 97.9 },
-            { nombre: 'MACA', cantidad: 0, precio: 63.9 },
-            { nombre: 'CHANCAPIEDRA CAP LIFE', cantidad: 10, precio: 67.9 },
-            { nombre: 'PASSI D6', cantidad: 8, precio: 42.9 },
-            { nombre: 'GOTAS PASSI D30', cantidad: 10, precio: 36.9 },
-            { nombre: 'GLOBULOS MELIS D30', cantidad: 10, precio: 36.9 },
-            { nombre: 'CHAGA', cantidad: 5, precio: 114.9 },
-            { nombre: 'MYO INOSILTOL', cantidad: 6, precio: 95.9 },
-            { nombre: 'COLINE', cantidad: 6, precio: 74.9 },
-            { nombre: 'Liquied natures', cantidad: 6, precio: 134.9 }
-        ];
-
-        // ============ FUNCIONES GLOBALES ============
         window.loginProfile = function(profile) {
             currentProfile = profile;
             document.getElementById('profileSelector').style.display = 'none';
             document.getElementById('mainApp').classList.add('active');
             document.getElementById('profileBadge').textContent = profile === 'doctora' ? '👨‍⚕️ Doctora Teresa' : '🏪 Zensavita';
-            console.log('✅ Perfil activo:', profile);
-            window.renderInventory();
+            syncData();
+            syncInterval = setInterval(syncData, 2000);
         }
 
         window.logoutNow = function() {
             currentProfile = null;
             cart = [];
+            clearInterval(syncInterval);
             document.getElementById('profileSelector').style.display = 'flex';
             document.getElementById('mainApp').classList.remove('active');
+        }
+
+        async function syncData() {
+            try {
+                const indicator = document.getElementById('syncIndicator');
+                indicator.textContent = '🔄 Sincronizando...';
+                indicator.classList.remove('offline');
+                indicator.classList.add('syncing');
+
+                const response = await fetch(`${API_URL}?action=getInventario`);
+                const data = await response.json();
+
+                if (data && Array.isArray(data)) {
+                    inventory = data;
+                    window.renderInventory();
+                }
+
+                indicator.textContent = '✅ Sincronizado';
+                indicator.classList.remove('syncing');
+                indicator.classList.add('synced');
+            } catch (err) {
+                console.error('❌ Error:', err);
+                const indicator = document.getElementById('syncIndicator');
+                indicator.textContent = '❌ Sin conexión';
+                indicator.classList.remove('syncing');
+                indicator.classList.add('offline');
+            }
         }
 
         window.switchTab = function(tab) {
@@ -469,7 +358,7 @@
             document.getElementById(tab).classList.add('active');
             event.target.classList.add('active');
             if (tab === 'ingresos') {
-                renderSalesList();
+                loadSales();
                 updateCharts('day');
             } else if (tab === 'gestion') {
                 renderManagement();
@@ -482,7 +371,8 @@
                 let status = 'status-ok', statusText = '✅ OK';
                 if (item.cantidad === 0) { status = 'status-out'; statusText = '❌ Agotado'; }
                 else if (item.cantidad < 5) { status = 'status-low'; statusText = '⚠️ Bajo Stock'; }
-                return `<tr><td><strong>${item.nombre}</strong></td><td>${item.cantidad}</td><td>$${(item.precio * 1000).toLocaleString('es-CO')}</td><td><span class="status-badge ${status}">${statusText}</span></td></tr>`;
+                let precio = currentProfile === 'doctora' ? item.precioDoctora : item.precioZensavita;
+                return `<tr><td><strong>${item.nombre}</strong></td><td>${item.cantidad}</td><td>$${(precio * 1000).toLocaleString('es-CO')}</td><td><span class="status-badge ${status}">${statusText}</span></td></tr>`;
             }).join('');
         }
 
@@ -494,37 +384,38 @@
         }
 
         window.renderManagement = function() {
-            document.getElementById('managementBody').innerHTML = inventory.map((item, idx) => `
+            document.getElementById('managementBody').innerHTML = inventory.map((item) => `
                 <div class="product-row">
                     <div><strong>${item.nombre}</strong></div>
-                    <input type="number" min="0" value="${item.cantidad}" onchange="window.updateQty(${idx}, this.value)">
-                    <input type="number" min="0" step="0.1" value="${item.precio}" onchange="window.updatePrice(${idx}, this.value)">
-                    <button class="btn btn-secondary" onclick="window.deleteProduct(${idx})">❌ Eliminar</button>
+                    <input type="number" min="0" value="${item.cantidad}" onchange="window.updateQty('${item.sku}', this.value)">
+                    <input type="number" min="0" step="0.1" value="${item.precio}" disabled style="background: var(--accent);">
+                    <button class="btn btn-secondary" onclick="window.deleteProduct('${item.sku}')">❌ Eliminar</button>
                 </div>
             `).join('');
         }
 
-        window.updateQty = function(idx, val) {
-            inventory[idx].cantidad = parseInt(val);
-            saveToStorage();
-            renderManagement();
-            window.renderInventory();
+        window.updateQty = async function(sku, val) {
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'updateQty', sku, qty: parseInt(val), profile: currentProfile })
+                });
+                showNotification('✅ Cantidad actualizada', 'success');
+                syncData();
+            } catch (err) {
+                showNotification('❌ Error actualizando', 'error');
+            }
         }
 
-        window.updatePrice = function(idx, val) {
-            inventory[idx].precio = parseFloat(val);
-            saveToStorage();
-            renderManagement();
-            window.renderInventory();
-        }
-
-        window.deleteProduct = function(idx) {
-            if (confirm(`¿Eliminar "${inventory[idx].nombre}"?`)) {
-                inventory.splice(idx, 1);
-                saveToStorage();
-                renderManagement();
-                window.renderInventory();
-                showNotification('✅ Producto eliminado', 'success');
+        window.deleteProduct = function(sku) {
+            if (confirm(`¿Eliminar producto?`)) {
+                const idx = inventory.findIndex(p => p.sku === sku);
+                if (idx >= 0) {
+                    inventory.splice(idx, 1);
+                    renderManagement();
+                    window.renderInventory();
+                    showNotification('✅ Eliminado', 'success');
+                }
             }
         }
 
@@ -534,19 +425,20 @@
 
         window.closeAddProductModal = function() {
             document.getElementById('addProductModal').classList.remove('active');
+            document.getElementById('newProductSku').value = '';
             document.getElementById('newProductName').value = '';
             document.getElementById('newProductQty').value = '1';
             document.getElementById('newProductPrice').value = '0';
         }
 
         window.saveNewProduct = function() {
+            const sku = document.getElementById('newProductSku').value;
             const nombre = document.getElementById('newProductName').value;
             const cantidad = parseInt(document.getElementById('newProductQty').value) || 1;
             const precio = parseFloat(document.getElementById('newProductPrice').value) || 0;
-            if (!nombre) { showNotification('❌ Nombre requerido', 'error'); return; }
-            inventory.push({ nombre, cantidad, precio });
-            saveToStorage();
-            window.renderManagement();
+            if (!sku || !nombre) { showNotification('❌ Campos requeridos', 'error'); return; }
+            inventory.push({ sku, nombre, cantidad, precio, precioZensavita: precio, precioDoctora: precio });
+            renderManagement();
             window.renderInventory();
             window.closeAddProductModal();
             showNotification('✅ Producto agregado', 'success');
@@ -557,16 +449,14 @@
             const suggestions = document.getElementById('productSuggestions');
             if (search.length < 1) { suggestions.innerHTML = ''; return; }
             const results = inventory.filter(p => p.nombre.toLowerCase().includes(search.toLowerCase())).slice(0, 8);
-            suggestions.innerHTML = results.map(p => `
-                <div style="padding: 0.75rem; background: var(--accent); border-radius: 4px; margin: 0.3rem 0; cursor: pointer;" 
-                     onclick="window.selectProductForSale('${p.nombre}', ${p.cantidad}, ${p.precio})">
-                    <strong>${p.nombre}</strong> (${p.cantidad} disponibles) - $${(p.precio * 1000).toLocaleString('es-CO')}
-                </div>
-            `).join('');
+            suggestions.innerHTML = results.map(p => {
+                let precio = currentProfile === 'doctora' ? p.precioDoctora : p.precioZensavita;
+                return `<div style="padding: 0.75rem; background: var(--accent); border-radius: 4px; margin: 0.3rem 0; cursor: pointer;" onclick="window.selectProductForSale('${p.sku}', '${p.nombre}', ${p.cantidad}, ${precio})"><strong>${p.nombre}</strong> (${p.cantidad} disponibles) - $${(precio * 1000).toLocaleString('es-CO')}</div>`;
+            }).join('');
         }
 
-        window.selectProductForSale = function(nombre, disponible, precio) {
-            selectedProduct = { nombre, disponible, precio };
+        window.selectProductForSale = function(sku, nombre, disponible, precio) {
+            selectedProduct = { sku, nombre, disponible, precio };
             document.getElementById('productSearch').value = nombre;
             document.getElementById('productPrice').value = precio.toFixed(2);
             document.getElementById('productSuggestions').innerHTML = '';
@@ -577,13 +467,8 @@
         window.addProductToCart = function() {
             const qty = parseInt(document.getElementById('productQty').value) || 0;
             if (qty <= 0) { showNotification('❌ Cantidad inválida', 'error'); return; }
-            if (qty > selectedProduct.disponible) { showNotification(`❌ Stock máximo: ${selectedProduct.disponible}`, 'error'); return; }
-            cart.push({
-                nombre: selectedProduct.nombre,
-                cantidad: qty,
-                precio_unitario: selectedProduct.precio,
-                subtotal: qty * selectedProduct.precio
-            });
+            if (qty > selectedProduct.disponible) { showNotification(`❌ Máximo: ${selectedProduct.disponible}`, 'error'); return; }
+            cart.push({ sku: selectedProduct.sku, nombre: selectedProduct.nombre, cantidad: qty, precio_unitario: selectedProduct.precio, subtotal: qty * selectedProduct.precio });
             window.renderCart();
             document.getElementById('productSearch').value = '';
             document.getElementById('productQty').value = '1';
@@ -600,14 +485,7 @@
             let total = 0;
             document.getElementById('cartItems').innerHTML = cart.map((item, idx) => {
                 total += item.subtotal;
-                return `
-                    <div class="cart-item">
-                        <strong>${item.nombre}</strong>
-                        <div>${item.cantidad}x</div>
-                        <div>$${(item.subtotal * 1000).toLocaleString('es-CO')}</div>
-                        <button class="btn btn-danger" style="padding: 0.4rem;" onclick="window.removeCart(${idx})">❌</button>
-                    </div>
-                `;
+                return `<div class="cart-item"><strong>${item.nombre}</strong><div>${item.cantidad}x</div><div>$${(item.subtotal * 1000).toLocaleString('es-CO')}</div><button class="btn btn-danger" style="padding: 0.4rem;" onclick="window.removeCart(${idx})">❌</button></div>`;
             }).join('');
             document.getElementById('cartTotal').textContent = (total * 1000).toLocaleString('es-CO');
             document.getElementById('cartItemsContainer').style.display = 'block';
@@ -622,9 +500,9 @@
         window.confirmSale = function() {
             const clientName = document.getElementById('clientName').value;
             const clientId = document.getElementById('clientId').value;
-            if (!clientName || !clientId || cart.length === 0) { showNotification('❌ Completa todos los campos', 'error'); return; }
+            if (!clientName || !clientId || cart.length === 0) { showNotification('❌ Completa campos', 'error'); return; }
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
-            document.getElementById('confirmMessage').textContent = `¿Registrar venta a ${clientName} por $${(total * 1000).toLocaleString('es-CO')}?`;
+            document.getElementById('confirmMessage').textContent = `¿Confirmar venta a ${clientName} por $${(total * 1000).toLocaleString('es-CO')}?`;
             document.getElementById('confirmModal').classList.add('active');
         }
 
@@ -632,76 +510,74 @@
             document.getElementById('confirmModal').classList.remove('active');
         }
 
-        window.saveSale = function() {
+        window.saveSale = async function() {
             const clientName = document.getElementById('clientName').value;
             const clientId = document.getElementById('clientId').value;
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
-            const venta = { fecha: new Date().toISOString().split('T')[0], cliente: clientName, cedula: clientId, perfil: currentProfile, productos: cart, total: total };
-            if (currentProfile === 'doctora') ventasDoctora.push(venta);
-            else ventasZensavita.push(venta);
-            cart.forEach(item => {
-                const prod = inventory.find(p => p.nombre === item.nombre);
-                if (prod) prod.cantidad -= item.cantidad;
-            });
-            saveToStorage();
-            document.getElementById('clientName').value = '';
-            document.getElementById('clientId').value = '';
-            cart = [];
-            window.renderCart();
-            window.renderInventory();
-            window.closeConfirmModal();
-            showNotification('✅ Venta registrada', 'success');
-            window.switchTab('ingresos');
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'addSale', profile: currentProfile, cliente: clientName, cedula: clientId, productos: cart, total })
+                });
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientId').value = '';
+                cart = [];
+                window.renderCart();
+                window.closeConfirmModal();
+                showNotification('✅ Venta registrada', 'success');
+                syncData();
+                setTimeout(() => window.switchTab('ingresos'), 500);
+            } catch (err) {
+                showNotification('❌ Error', 'error');
+            }
+        }
+
+        async function loadSales() {
+            try {
+                const response = await fetch(`${API_URL}?action=getSales&profile=${currentProfile}`);
+                const data = await response.json();
+                ventas = data || [];
+                renderSalesList();
+            } catch (err) {
+                console.error('Error:', err);
+            }
         }
 
         function renderSalesList() {
             const list = document.getElementById('salesList');
-            const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
-            if (ventas.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas registradas</p>'; return; }
-            list.innerHTML = ventas.map(venta => `
-                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha} - ${venta.productos.length} producto(s)</small></div>
-                    <div style="font-weight: 600; color: var(--primary-dark); font-size: 1.1rem;">$${(venta.total * 1000).toLocaleString('es-CO')}</div>
-                </div>
-            `).join('');
+            if (ventas.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas</p>'; return; }
+            list.innerHTML = ventas.map(venta => `<div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between;"><div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha}</small></div><div style="font-weight: 600; color: var(--primary-dark);">$${(venta.total * 1000).toLocaleString('es-CO')}</div></div>`).join('');
         }
 
         window.filterSalesList = function() {
             const cedula = document.getElementById('searchByCedula').value;
             const list = document.getElementById('salesList');
-            const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
             const filtered = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
             if (filtered.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin resultados</p>'; return; }
-            list.innerHTML = filtered.map(venta => `
-                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha} - ${venta.productos.length} producto(s)</small></div>
-                    <div style="font-weight: 600; color: var(--primary-dark); font-size: 1.1rem;">$${(venta.total * 1000).toLocaleString('es-CO')}</div>
-                </div>
-            `).join('');
+            list.innerHTML = filtered.map(venta => `<div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between;"><div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha}</small></div><div style="font-weight: 600; color: var(--primary-dark);">$${(venta.total * 1000).toLocaleString('es-CO')}</div></div>`).join('');
         }
 
         window.updateCharts = function(period) {
-            const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
             const labels = [], data = [];
             if (period === 'day') {
                 const hoy = new Date().toISOString().split('T')[0];
                 labels.push(hoy);
-                data.push((ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + v.total, 0) * 1000));
+                data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + v.total, 0) * 1000);
             } else if (period === 'week') {
                 for (let i = 6; i >= 0; i--) {
                     const fecha = new Date(); fecha.setDate(fecha.getDate() - i);
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push((ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000));
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000);
                 }
-            } else if (period === 'month') {
+            } else {
                 const ahora = new Date();
                 for (let i = 1; i <= 31; i++) {
                     const fecha = new Date(ahora.getFullYear(), ahora.getMonth(), i);
                     if (fecha.getMonth() !== ahora.getMonth()) break;
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push((ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000));
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000);
                 }
             }
             if (ingresoChart) ingresoChart.destroy();
@@ -713,27 +589,26 @@
         }
 
         window.updateUnitsChart = function(period) {
-            const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
             const labels = [], data = [];
             if (period === 'day') {
                 const hoy = new Date().toISOString().split('T')[0];
                 labels.push(hoy);
-                data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + v.productos.reduce((ps, p) => ps + p.cantidad, 0), 0));
+                data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + (JSON.parse(v.productos || '[]')).reduce((p, item) => p + item.cantidad, 0), 0));
             } else if (period === 'week') {
                 for (let i = 6; i >= 0; i--) {
                     const fecha = new Date(); fecha.setDate(fecha.getDate() - i);
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.productos.reduce((ps, p) => ps + p.cantidad, 0), 0));
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + (JSON.parse(v.productos || '[]')).reduce((p, item) => p + item.cantidad, 0), 0));
                 }
-            } else if (period === 'month') {
+            } else {
                 const ahora = new Date();
                 for (let i = 1; i <= 31; i++) {
                     const fecha = new Date(ahora.getFullYear(), ahora.getMonth(), i);
                     if (fecha.getMonth() !== ahora.getMonth()) break;
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.productos.reduce((ps, p) => ps + p.cantidad, 0), 0));
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + (JSON.parse(v.productos || '[]')).reduce((p, item) => p + item.cantidad, 0), 0));
                 }
             }
             if (unitsChart) unitsChart.destroy();
@@ -741,22 +616,6 @@
                 type: 'line', data: { labels, datasets: [{ label: 'Unidades', data, borderColor: '#7DCFE8', backgroundColor: 'rgba(184, 230, 240, 0.1)', borderWidth: 2, tension: 0.4, fill: true }] },
                 options: { responsive: true, maintainAspectRatio: true }
             });
-        }
-
-        function saveToStorage() {
-            localStorage.setItem('zensavita_inventory', JSON.stringify(inventory));
-            localStorage.setItem('zensavita_ventas_doctora', JSON.stringify(ventasDoctora));
-            localStorage.setItem('zensavita_ventas_zensavita', JSON.stringify(ventasZensavita));
-        }
-
-        function loadFromStorage() {
-            const inv = localStorage.getItem('zensavita_inventory');
-            const vd = localStorage.getItem('zensavita_ventas_doctora');
-            const vz = localStorage.getItem('zensavita_ventas_zensavita');
-            if (inv) inventory = JSON.parse(inv);
-            else inventory = INVENTARIO_INICIAL.map(p => ({ ...p }));
-            if (vd) ventasDoctora = JSON.parse(vd);
-            if (vz) ventasZensavita = JSON.parse(vz);
         }
 
         function showNotification(msg, type) {
@@ -767,10 +626,7 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        // ============ INICIALIZAR ============
-        loadFromStorage();
-        window.renderInventory();
-        console.log('✅ Zensavita LISTO - Sin errores');
+        console.log('✅ Zensavita LISTO - Google Sheets conectado');
     </script>
 </body>
 </html>
