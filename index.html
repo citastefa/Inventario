@@ -26,46 +26,16 @@
             color: var(--text);
             min-height: 100vh;
         }
-        .profile-selector {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .profile-card {
-            text-align: center;
-            padding: 2rem;
-        }
-        .profile-card h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: var(--primary-dark);
-        }
-        .profile-card p {
-            font-size: 1rem;
-            color: #666;
-            margin-bottom: 2rem;
-        }
-        .profile-buttons {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
+        .profile-selector { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .profile-card { text-align: center; padding: 2rem; }
+        .profile-card h1 { font-size: 2.5rem; margin-bottom: 1rem; color: var(--primary-dark); }
+        .profile-card p { font-size: 1rem; color: #666; margin-bottom: 2rem; }
+        .profile-buttons { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; }
         .btn-profile {
-            padding: 1.5rem 2rem;
-            font-size: 1.1rem;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            min-width: 200px;
-            transition: all 0.3s ease;
+            padding: 1.5rem 2rem; font-size: 1.1rem; border: none; border-radius: 12px; cursor: pointer;
+            font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-width: 200px; transition: all 0.3s ease;
         }
-        .btn-profile:hover {
-            transform: translateY(-3px);
-        }
+        .btn-profile:hover { transform: translateY(-3px); }
         .btn-profile.doctora {
             background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
             color: white;
@@ -74,368 +44,83 @@
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
         }
-        .main-app {
-            display: none;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        .main-app.active {
-            display: flex;
-        }
+        .main-app { display: none; flex-direction: column; min-height: 100vh; }
+        .main-app.active { display: flex; }
         header {
-            background: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid var(--primary);
+            background: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary);
         }
-        header h1 {
-            font-size: 1.8rem;
-        }
-        .header-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
+        header h1 { font-size: 1.8rem; }
+        .header-actions { display: flex; gap: 1rem; align-items: center; }
         .sync-indicator {
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+            display: flex; align-items: center; gap: 0.5rem;
         }
-        .sync-indicator.synced {
-            background: var(--success);
-            color: white;
-        }
-        .sync-indicator.syncing {
-            background: var(--warning);
-            color: white;
-        }
-        .sync-indicator.offline {
-            background: var(--error);
-            color: white;
-        }
-        .profile-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: white;
-            background: var(--primary);
-        }
-        .btn-logout {
-            padding: 0.5rem 1rem;
-            background: var(--error);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .nav-tabs {
-            background: white;
-            display: flex;
-            border-bottom: 2px solid var(--border);
-            padding: 0 2rem;
-            overflow-x: auto;
-        }
+        .sync-indicator.synced { background: var(--success); color: white; }
+        .sync-indicator.offline { background: var(--error); color: white; }
+        .profile-badge { padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; font-size: 0.9rem; color: white; background: var(--primary); }
+        .btn-logout { padding: 0.5rem 1rem; background: var(--error); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .nav-tabs { background: white; display: flex; border-bottom: 2px solid var(--border); padding: 0 2rem; overflow-x: auto; }
         .nav-tab {
-            padding: 1rem 1.5rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #999;
-            position: relative;
-            white-space: nowrap;
+            padding: 1rem 1.5rem; background: none; border: none; cursor: pointer; font-size: 1rem;
+            font-weight: 600; color: #999; position: relative; white-space: nowrap;
         }
-        .nav-tab.active {
-            color: var(--text);
-        }
+        .nav-tab.active { color: var(--text); }
         .nav-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--primary);
+            content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: var(--primary);
         }
-        .content {
-            flex: 1;
-            padding: 2rem;
-            overflow-y: auto;
-        }
+        .content { flex: 1; padding: 2rem; overflow-y: auto; }
         .section { display: none; }
         .section.active { display: block; }
         h2 { margin-bottom: 1.5rem; color: var(--primary-dark); }
         h3 { margin-bottom: 1rem; color: var(--primary-dark); }
-        .search-box {
-            margin-bottom: 1.5rem;
-        }
-        .search-box input {
-            width: 100%;
-            max-width: 500px;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        .inventory-table {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        thead {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-        }
-        th, td {
-            padding: 1rem;
-            text-align: left;
-        }
-        td {
-            border-bottom: 1px solid var(--border);
-            font-size: 0.95rem;
-        }
-        tbody tr:hover {
-            background: #F9FFFE;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: white;
-        }
+        .search-box { margin-bottom: 1.5rem; }
+        .search-box input { width: 100%; max-width: 500px; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; }
+        .search-box input:focus { outline: none; border-color: var(--primary); }
+        .inventory-table { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.08); max-height: 600px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; font-weight: 600; position: sticky; top: 0; }
+        th, td { padding: 1rem; text-align: left; }
+        td { border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+        tbody tr:hover { background: #F9FFFE; }
+        .status-badge { display: inline-block; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: white; }
         .status-ok { background: var(--success); }
         .status-low { background: var(--warning); }
         .status-out { background: var(--error); }
-        .form-section {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            margin-bottom: 2rem;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        input[type="text"],
-        input[type="number"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-        .cart-items {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            margin-bottom: 2rem;
-        }
-        .cart-item {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 0.5fr;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--accent);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            align-items: center;
-        }
-        .cart-total {
-            padding: 1rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            border-radius: 8px;
-            font-size: 1.3rem;
-            font-weight: 600;
-            text-align: right;
-            margin-top: 1rem;
-        }
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(107, 163, 135, 0.3);
-        }
-        .btn-secondary {
-            background: var(--secondary);
-            color: white;
-        }
-        .btn-danger {
-            background: var(--error);
-            color: white;
-        }
-        .btn-full {
-            width: 100%;
-            padding: 1rem;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            max-width: 500px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-        .modal-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        .modal-buttons button {
-            flex: 1;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .btn-cancel {
-            background: var(--border);
-            color: var(--text);
-        }
-        .btn-confirm {
-            background: var(--primary);
-            color: white;
-        }
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 2000;
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(400px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
+        .form-section { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; }
+        input:focus { outline: none; border-color: var(--primary); }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+        .cart-items { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+        .cart-item { display: grid; grid-template-columns: 2fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; align-items: center; }
+        .cart-total { padding: 1rem; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-radius: 8px; font-size: 1.3rem; font-weight: 600; text-align: right; margin-top: 1rem; }
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(107, 163, 135, 0.3); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--error); color: white; }
+        .btn-full { width: 100%; padding: 1rem; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 2rem; border-radius: 12px; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .modal-buttons button { flex: 1; padding: 0.75rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: var(--border); color: var(--text); }
+        .btn-confirm { background: var(--primary); color: white; }
+        .notification { position: fixed; top: 20px; right: 20px; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 600; z-index: 2000; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .notification.success { background: var(--success); }
         .notification.error { background: var(--error); }
-        .charts-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-        .chart-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
-        .chart-controls {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        .chart-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--border);
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .chart-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-        .product-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--accent);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            align-items: center;
-        }
-        .product-row input {
-            padding: 0.5rem;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-        .product-row button {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
+        .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
+        .chart-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .chart-controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .chart-btn { padding: 0.5rem 1rem; border: 2px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
+        .chart-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .product-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; align-items: center; }
+        .product-row input { padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; }
+        .product-row button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             .content { padding: 1rem; }
@@ -452,8 +137,8 @@
             <h1>🌿 Zensavita</h1>
             <p>Sistema de Gestión de Inventario y Ventas</p>
             <div class="profile-buttons">
-                <button class="btn-profile doctora" id="btnDoctora">👨‍⚕️ Doctora Teresa</button>
-                <button class="btn-profile zensavita" id="btnZensavita">🏪 Zensavita</button>
+                <button class="btn-profile doctora" onclick="window.loginProfile('doctora'); return false;">👨‍⚕️ Doctora Teresa</button>
+                <button class="btn-profile zensavita" onclick="window.loginProfile('zensavita'); return false;">🏪 Zensavita</button>
             </div>
         </div>
     </div>
@@ -465,15 +150,15 @@
             <div class="header-actions">
                 <div class="sync-indicator synced" id="syncIndicator">✅ Sincronizado</div>
                 <span class="profile-badge" id="profileBadge"></span>
-                <button class="btn-logout" id="btnLogout">Salir</button>
+                <button class="btn-logout" onclick="window.logoutNow(); return false;">Salir</button>
             </div>
         </header>
 
         <div class="nav-tabs">
-            <button class="nav-tab active" data-tab="inventario">📦 Inventario</button>
-            <button class="nav-tab" data-tab="gestion">⚙️ Gestión</button>
-            <button class="nav-tab" data-tab="venta">💰 Registrar Venta</button>
-            <button class="nav-tab" data-tab="ingresos">📊 Ingresos</button>
+            <button class="nav-tab active" onclick="window.switchTab('inventario'); return false;">📦 Inventario</button>
+            <button class="nav-tab" onclick="window.switchTab('gestion'); return false;">⚙️ Gestión</button>
+            <button class="nav-tab" onclick="window.switchTab('venta'); return false;">💰 Registrar Venta</button>
+            <button class="nav-tab" onclick="window.switchTab('ingresos'); return false;">📊 Ingresos</button>
         </div>
 
         <div class="content">
@@ -481,17 +166,12 @@
             <div class="section active" id="inventario">
                 <h2>📦 Inventario</h2>
                 <div class="search-box">
-                    <input type="text" id="searchInventory" placeholder="Buscar producto...">
+                    <input type="text" id="searchInventory" placeholder="Buscar producto..." onkeyup="window.filterInventory()">
                 </div>
                 <div class="inventory-table">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th>Cantidad</th>
-                                <th>Precio (COP)</th>
-                                <th>Estado</th>
-                            </tr>
+                            <tr><th>Producto</th><th>Cantidad</th><th>Precio (COP)</th><th>Estado</th></tr>
                         </thead>
                         <tbody id="inventoryBody"></tbody>
                     </table>
@@ -501,13 +181,10 @@
             <!-- GESTIÓN -->
             <div class="section" id="gestion">
                 <h2>⚙️ Gestión de Inventario</h2>
-                <button class="btn btn-primary" id="btnAddProduct" style="margin-bottom: 2rem;">+ Agregar Producto</button>
+                <button class="btn btn-primary" onclick="window.openAddProductModal(); return false;" style="margin-bottom: 2rem;">+ Agregar Producto</button>
                 <div class="inventory-table">
                     <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--primary); color: white; border-radius: 8px; margin-bottom: 1rem; font-weight: 600; position: sticky; top: 0;">
-                        <div>Producto</div>
-                        <div>Cantidad</div>
-                        <div>Precio</div>
-                        <div></div>
+                        <div>Producto</div><div>Cantidad</div><div>Precio</div><div></div>
                     </div>
                     <div id="managementBody"></div>
                 </div>
@@ -527,13 +204,11 @@
                             <input type="text" id="clientId" placeholder="Ej: 1234567890">
                         </div>
                     </div>
-
                     <div class="form-group">
                         <label for="productSearch">Buscar Producto</label>
-                        <input type="text" id="productSearch" placeholder="Escribe el nombre...">
+                        <input type="text" id="productSearch" placeholder="Escribe el nombre..." onkeyup="window.searchProductsForSale()">
                         <div id="productSuggestions" style="margin-top: 0.5rem;"></div>
                     </div>
-
                     <div class="form-row" id="productOptionsRow" style="display: none;">
                         <div class="form-group">
                             <label for="productQty">Cantidad</label>
@@ -544,48 +219,43 @@
                             <input type="number" id="productPrice" disabled style="background: var(--accent);">
                         </div>
                     </div>
-                    <button class="btn btn-secondary" id="addProductBtn" style="display: none;">+ Agregar al Carrito</button>
+                    <button class="btn btn-secondary" id="addProductBtn" style="display: none;" onclick="window.addProductToCart(); return false;">+ Agregar al Carrito</button>
                 </div>
-
                 <div class="cart-items" id="cartItemsContainer" style="display: none;">
                     <h3>Productos en la Venta</h3>
                     <div id="cartItems"></div>
                     <div class="cart-total">Total: $<span id="cartTotal">0</span></div>
                 </div>
-
-                <button class="btn btn-primary btn-full" id="registerSaleBtn" style="display: none;">Registrar Venta</button>
+                <button class="btn btn-primary btn-full" id="registerSaleBtn" style="display: none;" onclick="window.confirmSale(); return false;">Registrar Venta</button>
             </div>
 
             <!-- INGRESOS -->
             <div class="section" id="ingresos">
                 <h2>📊 Ingresos y Ventas</h2>
-                
                 <div class="charts-container">
                     <div class="chart-card">
                         <h3>Ingresos por Período</h3>
                         <div class="chart-controls">
-                            <button class="chart-btn active" data-period="day">Día</button>
-                            <button class="chart-btn" data-period="week">Semana</button>
-                            <button class="chart-btn" data-period="month">Mes</button>
+                            <button class="chart-btn active" onclick="window.updateCharts('day'); return false;">Día</button>
+                            <button class="chart-btn" onclick="window.updateCharts('week'); return false;">Semana</button>
+                            <button class="chart-btn" onclick="window.updateCharts('month'); return false;">Mes</button>
                         </div>
                         <canvas id="ingresoChart"></canvas>
                     </div>
                     <div class="chart-card">
                         <h3>Unidades Vendidas</h3>
                         <div class="chart-controls">
-                            <button class="chart-btn active" data-period="day" data-chart="units">Día</button>
-                            <button class="chart-btn" data-period="week" data-chart="units">Semana</button>
-                            <button class="chart-btn" data-period="month" data-chart="units">Mes</button>
+                            <button class="chart-btn active" onclick="window.updateUnitsChart('day'); return false;">Día</button>
+                            <button class="chart-btn" onclick="window.updateUnitsChart('week'); return false;">Semana</button>
+                            <button class="chart-btn" onclick="window.updateUnitsChart('month'); return false;">Mes</button>
                         </div>
                         <canvas id="unitsChart"></canvas>
                     </div>
                 </div>
-
                 <div class="form-section">
                     <label for="searchByCedula">Buscar Venta por Cédula</label>
-                    <input type="text" id="searchByCedula" placeholder="Ingresa la cédula...">
+                    <input type="text" id="searchByCedula" placeholder="Ingresa la cédula..." onkeyup="window.filterSalesList()">
                 </div>
-
                 <div class="form-section">
                     <h3>Últimas Ventas</h3>
                     <div id="salesList"></div>
@@ -600,8 +270,8 @@
             <h2>Confirmar Venta</h2>
             <p id="confirmMessage"></p>
             <div class="modal-buttons">
-                <button class="btn-cancel" id="btnCancelSale">Cancelar</button>
-                <button class="btn-confirm" id="btnConfirmSale">Confirmar</button>
+                <button class="btn-cancel" onclick="window.closeConfirmModal(); return false;">Cancelar</button>
+                <button class="btn-confirm" onclick="window.saveSale(); return false;">Confirmar</button>
             </div>
         </div>
     </div>
@@ -622,17 +292,24 @@
                 <input type="number" id="newProductPrice" min="0" value="0">
             </div>
             <div class="modal-buttons">
-                <button class="btn-cancel" id="btnCancelAdd">Cancelar</button>
-                <button class="btn-confirm" id="btnConfirmAdd">Agregar</button>
+                <button class="btn-cancel" onclick="window.closeAddProductModal(); return false;">Cancelar</button>
+                <button class="btn-confirm" onclick="window.saveNewProduct(); return false;">Agregar</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ============ SUPABASE ============
+        // ============ CONFIGURACIÓN SUPABASE - ÚNICA DECLARACIÓN ============
         const SUPABASE_URL = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_sx8C7YLNQezLjtEPYCqe1Q_IhWXzuAk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let sbClient = null;
+        try {
+            sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('✅ Supabase conectado');
+        } catch (e) {
+            console.log('⚠️ Supabase no disponible, usando localStorage');
+        }
 
         // ============ ESTADO GLOBAL ============
         let currentProfile = null;
@@ -643,9 +320,7 @@
         let cart = [];
         let ingresoChart = null;
         let unitsChart = null;
-        let isOnline = navigator.onLine;
 
-        // ============ INVENTARIO INICIAL ============
         const INVENTARIO_INICIAL = [
             { nombre: 'FLEXIMAX', cantidad: 10, precio: 77.9 },
             { nombre: 'ADON-D6', cantidad: 10, precio: 42.9 },
@@ -771,221 +446,126 @@
             { nombre: 'Liquied natures', cantidad: 6, precio: 134.9 }
         ];
 
-        // ============ INICIALIZACIÓN ============
-        function init() {
-            // PRIMERO: Agregar listeners (crítico para que funcionen botones)
-            attachEventListeners();
-            
-            // LUEGO: Cargar datos
-            loadFromStorage();
-            renderInventory();
-            
-            // EN BACKGROUND: Supabase (no bloquea la UI)
-            loadFromSupabase().then(() => {
-                setupRealtimeSync();
-                updateSyncIndicator();
-            }).catch(err => {
-                console.log('Supabase no disponible, usando localStorage');
-                updateSyncIndicator();
-            });
-        }
-
-        function attachEventListeners() {
-            const btnDoctora = document.getElementById('btnDoctora');
-            const btnZensavita = document.getElementById('btnZensavita');
-            const btnLogout = document.getElementById('btnLogout');
-
-            if (btnDoctora) btnDoctora.addEventListener('click', () => loginProfile('doctora'));
-            if (btnZensavita) btnZensavita.addEventListener('click', () => loginProfile('zensavita'));
-            if (btnLogout) btnLogout.addEventListener('click', logout);
-
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    switchTab(this.getAttribute('data-tab'));
-                });
-            });
-
-            document.getElementById('searchInventory').addEventListener('keyup', filterInventory);
-            document.getElementById('btnAddProduct').addEventListener('click', openAddProductModal);
-            document.getElementById('btnCancelAdd').addEventListener('click', closeAddProductModal);
-            document.getElementById('btnConfirmAdd').addEventListener('click', saveNewProduct);
-            document.getElementById('productSearch').addEventListener('keyup', searchProductsForSale);
-            document.getElementById('addProductBtn').addEventListener('click', addProductToCart);
-            document.getElementById('registerSaleBtn').addEventListener('click', confirmSale);
-            document.getElementById('btnCancelSale').addEventListener('click', closeConfirmModal);
-            document.getElementById('btnConfirmSale').addEventListener('click', saveSale);
-            document.getElementById('searchByCedula').addEventListener('keyup', filterSalesList);
-
-            document.querySelectorAll('[data-period]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    if (this.getAttribute('data-chart') === 'units') {
-                        updateUnitsChart(this.getAttribute('data-period'));
-                    } else {
-                        updateCharts(this.getAttribute('data-period'));
-                    }
-                });
-            });
-
-            window.addEventListener('online', () => {
-                isOnline = true;
-                updateSyncIndicator();
-                syncToSupabase();
-            });
-
-            window.addEventListener('offline', () => {
-                isOnline = false;
-                updateSyncIndicator();
-            });
-        }
-
-        function updateSyncIndicator() {
-            const indicator = document.getElementById('syncIndicator');
-            if (isOnline) {
-                indicator.className = 'sync-indicator synced';
-                indicator.textContent = '✅ Sincronizado';
-            } else {
-                indicator.className = 'sync-indicator offline';
-                indicator.textContent = '⚠️ Offline (Local)';
-            }
-        }
-
-        function loginProfile(profile) {
+        // ============ FUNCIONES GLOBALES ============
+        window.loginProfile = function(profile) {
             currentProfile = profile;
             document.getElementById('profileSelector').style.display = 'none';
             document.getElementById('mainApp').classList.add('active');
             document.getElementById('profileBadge').textContent = profile === 'doctora' ? '👨‍⚕️ Doctora Teresa' : '🏪 Zensavita';
-            showNotification('✅ Bienvenido', 'success');
+            console.log('✅ Perfil activo:', profile);
+            window.renderInventory();
         }
 
-        function logout() {
+        window.logoutNow = function() {
             currentProfile = null;
             cart = [];
             document.getElementById('profileSelector').style.display = 'flex';
             document.getElementById('mainApp').classList.remove('active');
         }
 
-        // ============ INVENTARIO ============
-        function renderInventory() {
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+            if (tab === 'ingresos') {
+                renderSalesList();
+                updateCharts('day');
+            } else if (tab === 'gestion') {
+                renderManagement();
+            }
+        }
+
+        window.renderInventory = function() {
             const tbody = document.getElementById('inventoryBody');
             tbody.innerHTML = inventory.map(item => {
-                let status = 'status-ok';
-                let statusText = '✅ OK';
-                if (item.cantidad === 0) {
-                    status = 'status-out';
-                    statusText = '❌ Agotado';
-                } else if (item.cantidad < 5) {
-                    status = 'status-low';
-                    statusText = '⚠️ Bajo Stock';
-                }
-                return `
-                    <tr>
-                        <td><strong>${item.nombre}</strong></td>
-                        <td>${item.cantidad}</td>
-                        <td>$${(item.precio * 1000).toLocaleString('es-CO')}</td>
-                        <td><span class="status-badge ${status}">${statusText}</span></td>
-                    </tr>
-                `;
+                let status = 'status-ok', statusText = '✅ OK';
+                if (item.cantidad === 0) { status = 'status-out'; statusText = '❌ Agotado'; }
+                else if (item.cantidad < 5) { status = 'status-low'; statusText = '⚠️ Bajo Stock'; }
+                return `<tr><td><strong>${item.nombre}</strong></td><td>${item.cantidad}</td><td>$${(item.precio * 1000).toLocaleString('es-CO')}</td><td><span class="status-badge ${status}">${statusText}</span></td></tr>`;
             }).join('');
         }
 
-        function filterInventory() {
+        window.filterInventory = function() {
             const search = document.getElementById('searchInventory').value.toLowerCase();
-            const rows = document.querySelectorAll('#inventoryBody tr');
-            rows.forEach(row => {
+            document.querySelectorAll('#inventoryBody tr').forEach(row => {
                 row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
             });
         }
 
-        // ============ GESTIÓN ============
-        function renderManagement() {
-            const body = document.getElementById('managementBody');
-            body.innerHTML = inventory.map((item, idx) => `
+        window.renderManagement = function() {
+            document.getElementById('managementBody').innerHTML = inventory.map((item, idx) => `
                 <div class="product-row">
                     <div><strong>${item.nombre}</strong></div>
-                    <input type="number" min="0" value="${item.cantidad}" onchange="updateQty(${idx}, this.value)">
-                    <input type="number" min="0" step="0.1" value="${item.precio}" onchange="updatePrice(${idx}, this.value)">
-                    <button class="btn btn-secondary" onclick="deleteProduct(${idx})">❌ Eliminar</button>
+                    <input type="number" min="0" value="${item.cantidad}" onchange="window.updateQty(${idx}, this.value)">
+                    <input type="number" min="0" step="0.1" value="${item.precio}" onchange="window.updatePrice(${idx}, this.value)">
+                    <button class="btn btn-secondary" onclick="window.deleteProduct(${idx})">❌ Eliminar</button>
                 </div>
             `).join('');
         }
 
-        async function updateQty(idx, val) {
+        window.updateQty = function(idx, val) {
             inventory[idx].cantidad = parseInt(val);
             saveToStorage();
-            await syncToSupabase();
             renderManagement();
-            renderInventory();
+            window.renderInventory();
         }
 
-        async function updatePrice(idx, val) {
+        window.updatePrice = function(idx, val) {
             inventory[idx].precio = parseFloat(val);
             saveToStorage();
-            await syncToSupabase();
             renderManagement();
-            renderInventory();
+            window.renderInventory();
         }
 
-        async function deleteProduct(idx) {
+        window.deleteProduct = function(idx) {
             if (confirm(`¿Eliminar "${inventory[idx].nombre}"?`)) {
                 inventory.splice(idx, 1);
                 saveToStorage();
-                await syncToSupabase();
                 renderManagement();
-                renderInventory();
+                window.renderInventory();
                 showNotification('✅ Producto eliminado', 'success');
             }
         }
 
-        function openAddProductModal() {
+        window.openAddProductModal = function() {
             document.getElementById('addProductModal').classList.add('active');
         }
 
-        function closeAddProductModal() {
+        window.closeAddProductModal = function() {
             document.getElementById('addProductModal').classList.remove('active');
             document.getElementById('newProductName').value = '';
             document.getElementById('newProductQty').value = '1';
             document.getElementById('newProductPrice').value = '0';
         }
 
-        async function saveNewProduct() {
+        window.saveNewProduct = function() {
             const nombre = document.getElementById('newProductName').value;
             const cantidad = parseInt(document.getElementById('newProductQty').value) || 1;
             const precio = parseFloat(document.getElementById('newProductPrice').value) || 0;
-
-            if (!nombre) {
-                showNotification('❌ Nombre requerido', 'error');
-                return;
-            }
-
+            if (!nombre) { showNotification('❌ Nombre requerido', 'error'); return; }
             inventory.push({ nombre, cantidad, precio });
             saveToStorage();
-            await syncToSupabase();
-            renderManagement();
-            renderInventory();
-            closeAddProductModal();
+            window.renderManagement();
+            window.renderInventory();
+            window.closeAddProductModal();
             showNotification('✅ Producto agregado', 'success');
         }
 
-        // ============ VENTAS ============
-        function searchProductsForSale() {
+        window.searchProductsForSale = function() {
             const search = document.getElementById('productSearch').value;
             const suggestions = document.getElementById('productSuggestions');
-            
-            if (search.length < 1) {
-                suggestions.innerHTML = '';
-                return;
-            }
-
+            if (search.length < 1) { suggestions.innerHTML = ''; return; }
             const results = inventory.filter(p => p.nombre.toLowerCase().includes(search.toLowerCase())).slice(0, 8);
             suggestions.innerHTML = results.map(p => `
                 <div style="padding: 0.75rem; background: var(--accent); border-radius: 4px; margin: 0.3rem 0; cursor: pointer;" 
-                     onclick="selectProductForSale('${p.nombre}', ${p.cantidad}, ${p.precio})">
+                     onclick="window.selectProductForSale('${p.nombre}', ${p.cantidad}, ${p.precio})">
                     <strong>${p.nombre}</strong> (${p.cantidad} disponibles) - $${(p.precio * 1000).toLocaleString('es-CO')}
                 </div>
             `).join('');
         }
 
-        function selectProductForSale(nombre, disponible, precio) {
+        window.selectProductForSale = function(nombre, disponible, precio) {
             selectedProduct = { nombre, disponible, precio };
             document.getElementById('productSearch').value = nombre;
             document.getElementById('productPrice').value = precio.toFixed(2);
@@ -994,39 +574,29 @@
             document.getElementById('addProductBtn').style.display = 'block';
         }
 
-        function addProductToCart() {
+        window.addProductToCart = function() {
             const qty = parseInt(document.getElementById('productQty').value) || 0;
-            
-            if (qty <= 0) {
-                showNotification('❌ Cantidad inválida', 'error');
-                return;
-            }
-            if (qty > selectedProduct.disponible) {
-                showNotification(`❌ Stock máximo: ${selectedProduct.disponible}`, 'error');
-                return;
-            }
-
+            if (qty <= 0) { showNotification('❌ Cantidad inválida', 'error'); return; }
+            if (qty > selectedProduct.disponible) { showNotification(`❌ Stock máximo: ${selectedProduct.disponible}`, 'error'); return; }
             cart.push({
                 nombre: selectedProduct.nombre,
                 cantidad: qty,
                 precio_unitario: selectedProduct.precio,
                 subtotal: qty * selectedProduct.precio
             });
-
-            renderCart();
+            window.renderCart();
             document.getElementById('productSearch').value = '';
             document.getElementById('productQty').value = '1';
             document.getElementById('productOptionsRow').style.display = 'none';
             document.getElementById('addProductBtn').style.display = 'none';
         }
 
-        function renderCart() {
+        window.renderCart = function() {
             if (cart.length === 0) {
                 document.getElementById('cartItemsContainer').style.display = 'none';
                 document.getElementById('registerSaleBtn').style.display = 'none';
                 return;
             }
-
             let total = 0;
             document.getElementById('cartItems').innerHTML = cart.map((item, idx) => {
                 total += item.subtotal;
@@ -1035,134 +605,91 @@
                         <strong>${item.nombre}</strong>
                         <div>${item.cantidad}x</div>
                         <div>$${(item.subtotal * 1000).toLocaleString('es-CO')}</div>
-                        <button class="btn btn-danger" style="padding: 0.4rem;" onclick="removeCart(${idx})">❌</button>
+                        <button class="btn btn-danger" style="padding: 0.4rem;" onclick="window.removeCart(${idx})">❌</button>
                     </div>
                 `;
             }).join('');
-
             document.getElementById('cartTotal').textContent = (total * 1000).toLocaleString('es-CO');
             document.getElementById('cartItemsContainer').style.display = 'block';
             document.getElementById('registerSaleBtn').style.display = 'block';
         }
 
-        function removeCart(idx) {
+        window.removeCart = function(idx) {
             cart.splice(idx, 1);
-            renderCart();
+            window.renderCart();
         }
 
-        function confirmSale() {
+        window.confirmSale = function() {
             const clientName = document.getElementById('clientName').value;
             const clientId = document.getElementById('clientId').value;
-
-            if (!clientName || !clientId || cart.length === 0) {
-                showNotification('❌ Completa todos los campos', 'error');
-                return;
-            }
-
+            if (!clientName || !clientId || cart.length === 0) { showNotification('❌ Completa todos los campos', 'error'); return; }
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
             document.getElementById('confirmMessage').textContent = `¿Registrar venta a ${clientName} por $${(total * 1000).toLocaleString('es-CO')}?`;
             document.getElementById('confirmModal').classList.add('active');
         }
 
-        function closeConfirmModal() {
+        window.closeConfirmModal = function() {
             document.getElementById('confirmModal').classList.remove('active');
         }
 
-        async function saveSale() {
+        window.saveSale = function() {
             const clientName = document.getElementById('clientName').value;
             const clientId = document.getElementById('clientId').value;
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
-
-            const venta = {
-                fecha: new Date().toISOString().split('T')[0],
-                cliente: clientName,
-                cedula: clientId,
-                perfil: currentProfile,
-                productos: cart,
-                total: total
-            };
-
-            if (currentProfile === 'doctora') {
-                ventasDoctora.push(venta);
-            } else {
-                ventasZensavita.push(venta);
-            }
-
+            const venta = { fecha: new Date().toISOString().split('T')[0], cliente: clientName, cedula: clientId, perfil: currentProfile, productos: cart, total: total };
+            if (currentProfile === 'doctora') ventasDoctora.push(venta);
+            else ventasZensavita.push(venta);
             cart.forEach(item => {
                 const prod = inventory.find(p => p.nombre === item.nombre);
                 if (prod) prod.cantidad -= item.cantidad;
             });
-
             saveToStorage();
-            await syncToSupabase();
-
             document.getElementById('clientName').value = '';
             document.getElementById('clientId').value = '';
             cart = [];
-            renderCart();
-            renderInventory();
-
-            closeConfirmModal();
+            window.renderCart();
+            window.renderInventory();
+            window.closeConfirmModal();
             showNotification('✅ Venta registrada', 'success');
-            switchTab('ingresos');
+            window.switchTab('ingresos');
         }
 
-        // ============ INGRESOS ============
         function renderSalesList() {
             const list = document.getElementById('salesList');
             const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
-            
-            if (ventas.length === 0) {
-                list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas registradas</p>';
-                return;
-            }
-
+            if (ventas.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas registradas</p>'; return; }
             list.innerHTML = ventas.map(venta => `
                 <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>${venta.cliente}</strong> (${venta.cedula})<br>
-                        <small>${venta.fecha} - ${venta.productos.length} producto(s)</small>
-                    </div>
+                    <div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha} - ${venta.productos.length} producto(s)</small></div>
                     <div style="font-weight: 600; color: var(--primary-dark); font-size: 1.1rem;">$${(venta.total * 1000).toLocaleString('es-CO')}</div>
                 </div>
             `).join('');
         }
 
-        function filterSalesList() {
+        window.filterSalesList = function() {
             const cedula = document.getElementById('searchByCedula').value;
             const list = document.getElementById('salesList');
             const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
             const filtered = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
-            
-            if (filtered.length === 0) {
-                list.innerHTML = '<p style="text-align: center; color: #999;">Sin resultados</p>';
-                return;
-            }
-
+            if (filtered.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin resultados</p>'; return; }
             list.innerHTML = filtered.map(venta => `
                 <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>${venta.cliente}</strong> (${venta.cedula})<br>
-                        <small>${venta.fecha} - ${venta.productos.length} producto(s)</small>
-                    </div>
+                    <div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha} - ${venta.productos.length} producto(s)</small></div>
                     <div style="font-weight: 600; color: var(--primary-dark); font-size: 1.1rem;">$${(venta.total * 1000).toLocaleString('es-CO')}</div>
                 </div>
             `).join('');
         }
 
-        function updateCharts(period) {
+        window.updateCharts = function(period) {
             const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
-            const labels = [];
-            const data = [];
-
+            const labels = [], data = [];
             if (period === 'day') {
                 const hoy = new Date().toISOString().split('T')[0];
                 labels.push(hoy);
                 data.push((ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + v.total, 0) * 1000));
             } else if (period === 'week') {
                 for (let i = 6; i >= 0; i--) {
-                    const fecha = new Date();
-                    fecha.setDate(fecha.getDate() - i);
+                    const fecha = new Date(); fecha.setDate(fecha.getDate() - i);
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
                     data.push((ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000));
@@ -1177,30 +704,24 @@
                     data.push((ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000));
                 }
             }
-
             if (ingresoChart) ingresoChart.destroy();
             ingresoChart = new Chart(document.getElementById('ingresoChart'), {
-                type: 'bar',
-                data: { labels, datasets: [{ label: 'Ingresos', data, backgroundColor: '#A8D5BA', borderColor: '#6BA387', borderWidth: 1 }] },
+                type: 'bar', data: { labels, datasets: [{ label: 'Ingresos', data, backgroundColor: '#A8D5BA', borderColor: '#6BA387', borderWidth: 1 }] },
                 options: { responsive: true, maintainAspectRatio: true }
             });
-
-            updateUnitsChart(period);
+            window.updateUnitsChart(period);
         }
 
-        function updateUnitsChart(period) {
+        window.updateUnitsChart = function(period) {
             const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
-            const labels = [];
-            const data = [];
-
+            const labels = [], data = [];
             if (period === 'day') {
                 const hoy = new Date().toISOString().split('T')[0];
                 labels.push(hoy);
                 data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + v.productos.reduce((ps, p) => ps + p.cantidad, 0), 0));
             } else if (period === 'week') {
                 for (let i = 6; i >= 0; i--) {
-                    const fecha = new Date();
-                    fecha.setDate(fecha.getDate() - i);
+                    const fecha = new Date(); fecha.setDate(fecha.getDate() - i);
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
                     data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.productos.reduce((ps, p) => ps + p.cantidad, 0), 0));
@@ -1215,30 +736,13 @@
                     data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.productos.reduce((ps, p) => ps + p.cantidad, 0), 0));
                 }
             }
-
             if (unitsChart) unitsChart.destroy();
             unitsChart = new Chart(document.getElementById('unitsChart'), {
-                type: 'line',
-                data: { labels, datasets: [{ label: 'Unidades', data, borderColor: '#7DCFE8', backgroundColor: 'rgba(184, 230, 240, 0.1)', borderWidth: 2, tension: 0.4, fill: true }] },
+                type: 'line', data: { labels, datasets: [{ label: 'Unidades', data, borderColor: '#7DCFE8', backgroundColor: 'rgba(184, 230, 240, 0.1)', borderWidth: 2, tension: 0.4, fill: true }] },
                 options: { responsive: true, maintainAspectRatio: true }
             });
         }
 
-        function switchTab(tabName) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-            if (tabName === 'gestion') {
-                renderManagement();
-            } else if (tabName === 'ingresos') {
-                renderSalesList();
-                updateCharts('day');
-            }
-        }
-
-        // ============ STORAGE ============
         function saveToStorage() {
             localStorage.setItem('zensavita_inventory', JSON.stringify(inventory));
             localStorage.setItem('zensavita_ventas_doctora', JSON.stringify(ventasDoctora));
@@ -1250,157 +754,11 @@
             const vd = localStorage.getItem('zensavita_ventas_doctora');
             const vz = localStorage.getItem('zensavita_ventas_zensavita');
             if (inv) inventory = JSON.parse(inv);
+            else inventory = INVENTARIO_INICIAL.map(p => ({ ...p }));
             if (vd) ventasDoctora = JSON.parse(vd);
             if (vz) ventasZensavita = JSON.parse(vz);
         }
 
-        // ============ SUPABASE ============
-        async function loadFromSupabase() {
-            return new Promise((resolve) => {
-                // Timeout de 5 segundos - si Supabase tarda más, continuamos con localStorage
-                const timeout = setTimeout(() => {
-                    console.log('Supabase timeout - usando localStorage');
-                    resolve();
-                }, 5000);
-
-                try {
-                    if (!isOnline) {
-                        clearTimeout(timeout);
-                        resolve();
-                        return;
-                    }
-                    
-                    // Cargar inventario
-                    supabase
-                        .from('inventario')
-                        .select('*')
-                        .then(({ data: invData, error: invError }) => {
-                            try {
-                                if (!invError && invData && invData.length > 0) {
-                                    inventory = invData.map(p => ({
-                                        nombre: p.nombre,
-                                        cantidad: p.cantidad,
-                                        precio: p.precio
-                                    }));
-                                    saveToStorage();
-                                    renderInventory();
-                                }
-                            } catch (e) {
-                                console.log('Error procesando inventario:', e);
-                            }
-                        })
-                        .catch(err => console.log('Error inventario:', err));
-
-                    // Cargar ventas
-                    supabase
-                        .from('ventas')
-                        .select('*')
-                        .then(({ data: ventasData, error: ventasError }) => {
-                            try {
-                                if (!ventasError && ventasData) {
-                                    ventasDoctora = ventasData.filter(v => v.perfil === 'doctora');
-                                    ventasZensavita = ventasData.filter(v => v.perfil === 'zensavita');
-                                    saveToStorage();
-                                }
-                            } catch (e) {
-                                console.log('Error procesando ventas:', e);
-                            }
-                            clearTimeout(timeout);
-                            resolve();
-                        })
-                        .catch(err => {
-                            console.log('Error ventas:', err);
-                            clearTimeout(timeout);
-                            resolve();
-                        });
-                } catch (error) {
-                    console.log('Error cargando Supabase:', error);
-                    clearTimeout(timeout);
-                    resolve();
-                }
-            });
-        }
-
-        async function syncToSupabase() {
-            if (!isOnline) return;
-
-            try {
-                // Sincronizar inventario
-                const { error: delError } = await supabase
-                    .from('inventario')
-                    .delete()
-                    .neq('id', -1);
-
-                if (!delError) {
-                    const invRows = inventory.map(p => ({
-                        nombre: p.nombre,
-                        cantidad: p.cantidad,
-                        precio: p.precio
-                    }));
-                    await supabase.from('inventario').insert(invRows);
-                }
-
-                // Sincronizar ventas
-                const allVentas = [...ventasDoctora, ...ventasZensavita];
-                const { error: ventasError } = await supabase
-                    .from('ventas')
-                    .delete()
-                    .neq('id', -1);
-
-                if (!ventasError) {
-                    const ventasRows = allVentas.map(v => ({
-                        fecha: v.fecha,
-                        cliente: v.cliente,
-                        cedula: v.cedula,
-                        perfil: v.perfil,
-                        productos: v.productos,
-                        total: v.total
-                    }));
-                    if (ventasRows.length > 0) {
-                        await supabase.from('ventas').insert(ventasRows);
-                    }
-                }
-            } catch (error) {
-                console.log('Error sincronizando');
-            }
-        }
-
-        function setupRealtimeSync() {
-            try {
-                // NO BLOQUEA - ejecuta en background
-                setTimeout(() => {
-                    try {
-                        supabase
-                            .channel('inventory_changes')
-                            .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario' },
-                                payload => {
-                                    try {
-                                        loadFromSupabase();
-                                        renderInventory();
-                                    } catch (e) { console.log('Error actualizar inventario realtime:', e); }
-                                })
-                            .subscribe();
-
-                        supabase
-                            .channel('sales_changes')
-                            .on('postgres_changes', { event: '*', schema: 'public', table: 'ventas' },
-                                payload => {
-                                    try {
-                                        loadFromSupabase();
-                                        renderSalesList();
-                                    } catch (e) { console.log('Error actualizar ventas realtime:', e); }
-                                })
-                            .subscribe();
-                    } catch (error) {
-                        console.log('Realtime no disponible');
-                    }
-                }, 1000);
-            } catch (error) {
-                console.log('Realtime setup error');
-            }
-        }
-
-        // ============ NOTIFICACIONES ============
         function showNotification(msg, type) {
             const notif = document.createElement('div');
             notif.className = `notification ${type}`;
@@ -1409,9 +767,10 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        // Inicializar INMEDIATAMENTE (no async)
-        init();
-        console.log('✅ Zensavita cargado - Botones activos');
+        // ============ INICIALIZAR ============
+        loadFromStorage();
+        window.renderInventory();
+        console.log('✅ Zensavita LISTO - Sin errores');
     </script>
 </body>
 </html>
