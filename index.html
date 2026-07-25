@@ -684,10 +684,10 @@
             <h1>🌿 Zensavita</h1>
             <p>Sistema de Gestión de Inventario y Ventas</p>
             <div class="profile-buttons">
-                <button class="btn-profile doctora" onclick="selectProfile('doctora')">
+                <button class="btn-profile doctora" onclick="selectProfileNow('doctora')">
                     👨‍⚕️ Doctora Teresa
                 </button>
-                <button class="btn-profile zensavita" onclick="selectProfile('zensavita')">
+                <button class="btn-profile zensavita" onclick="selectProfileNow('zensavita')">
                     🏪 Zensavita
                 </button>
             </div>
@@ -700,7 +700,7 @@
             <h1>🌿 Zensavita</h1>
             <div class="header-actions">
                 <div class="sync-indicator" id="syncIndicator">
-                    ✅ Sincronizado
+                    ✅ Conectado
                 </div>
                 <span class="profile-badge" id="profileBadge"></span>
                 <button class="btn-logout" onclick="logout()">Salir</button>
@@ -916,12 +916,10 @@
 
     <script>
         // ============ CONFIGURACIÓN SUPABASE ============
-        const supabaseUrl = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
-        const supabaseKey = 'sb_publishable_sx8C7YLNQezLjtEPYCqe1Q_IhWXzuAk';
-        const { createClient } = window.supabase;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const SUPABASE_URL = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_sx8C7YLNQezLjtEPYCqe1Q_IhWXzuAk';
 
-        // ============ ESTADO GLOBAL ============
+        let supabase = null;
         let currentProfile = null;
         let inventory = [];
         let ventas = [];
@@ -931,21 +929,45 @@
         let currentMonth = new Date();
         let editingProductId = null;
 
-        // ============ INICIALIZACIÓN ============
-        async function selectProfile(profile) {
+        // Inicializar Supabase
+        function initSupabase() {
+            try {
+                if (window.supabase && window.supabase.createClient) {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log('✅ Supabase conectado');
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ Error inicializando Supabase:', error);
+            }
+            return false;
+        }
+
+        // Esperar a que Supabase cargue
+        window.addEventListener('load', function() {
+            initSupabase();
+        });
+
+        // ============ SELECCIONAR PERFIL ============
+        async function selectProfileNow(profile) {
+            console.log('📌 Seleccionando perfil:', profile);
+            
             currentProfile = profile;
             document.getElementById('profileSelector').style.display = 'none';
             document.getElementById('mainApp').classList.add('active');
             document.getElementById('profileBadge').textContent = profile === 'doctora' ? '👨‍⚕️ Doctora Teresa' : '🏪 Zensavita';
             document.getElementById('profileBadge').className = `profile-badge ${profile}`;
             
+            // Cargar datos
             await loadInventory();
             await loadVentas();
-            setupRealtime();
             setupEventListeners();
             renderInventory();
             renderGestion();
             initializeCalendar();
+            setupRealtime();
+            
+            showNotification('✅ Sistema listo', 'success');
         }
 
         function logout() {
@@ -956,39 +978,48 @@
 
         // ============ SUPABASE REALTIME ============
         function setupRealtime() {
-            // Escuchar cambios en inventario
-            supabase
-                .channel('inventario-changes')
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'inventario' },
-                    (payload) => {
-                        console.log('Cambio en inventario:', payload);
-                        loadInventory().then(() => {
-                            renderInventory();
-                            renderGestion();
-                        });
-                    }
-                )
-                .subscribe();
+            if (!supabase) return;
 
-            // Escuchar cambios en ventas
-            supabase
-                .channel('ventas-changes')
-                .on('postgres_changes',
-                    { event: '*', schema: 'public', table: 'ventas' },
-                    (payload) => {
-                        console.log('Nueva venta:', payload);
-                        loadVentas().then(() => {
-                            renderSalesList();
-                            updateCharts('day');
-                        });
-                    }
-                )
-                .subscribe();
+            try {
+                supabase
+                    .channel('inventario-changes')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'inventario' },
+                        (payload) => {
+                            console.log('🔄 Cambio en inventario');
+                            loadInventory().then(() => {
+                                renderInventory();
+                                renderGestion();
+                            });
+                        }
+                    )
+                    .subscribe();
+
+                supabase
+                    .channel('ventas-changes')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'ventas' },
+                        (payload) => {
+                            console.log('🔄 Nueva venta');
+                            loadVentas().then(() => {
+                                renderSalesList();
+                                updateCharts('day');
+                            });
+                        }
+                    )
+                    .subscribe();
+            } catch (error) {
+                console.error('Error en realtime:', error);
+            }
         }
 
         // ============ CARGAR DATOS ============
         async function loadInventory() {
+            if (!supabase) {
+                console.warn('⚠️ Supabase no disponible');
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('inventario')
@@ -997,14 +1028,17 @@
 
                 if (error) throw error;
                 inventory = data || [];
+                console.log('✅ Inventario cargado:', inventory.length, 'productos');
                 updateSyncStatus('Sincronizado', 'success');
             } catch (error) {
-                console.error('Error cargando inventario:', error);
+                console.error('❌ Error cargando inventario:', error);
                 updateSyncStatus('Error de conexión', 'error');
             }
         }
 
         async function loadVentas() {
+            if (!supabase || !currentProfile) return;
+
             try {
                 const { data, error } = await supabase
                     .from('ventas')
@@ -1014,8 +1048,9 @@
 
                 if (error) throw error;
                 ventas = data || [];
+                console.log('✅ Ventas cargadas:', ventas.length);
             } catch (error) {
-                console.error('Error cargando ventas:', error);
+                console.error('❌ Error cargando ventas:', error);
             }
         }
 
@@ -1063,6 +1098,11 @@
         }
 
         async function addNewProduct() {
+            if (!supabase) {
+                showNotification('❌ Supabase no disponible', 'error');
+                return;
+            }
+
             const sku = document.getElementById('newSku').value.trim();
             const nombre = document.getElementById('newNombre').value.trim();
             const cantidad = parseInt(document.getElementById('newCantidad').value) || 0;
@@ -1070,7 +1110,7 @@
             const precioD = parseFloat(document.getElementById('newPrecioD').value) || 0;
 
             if (!sku || !nombre || !precioZ) {
-                showNotification('Completa todos los campos requeridos', 'error');
+                showNotification('❌ Completa todos los campos requeridos', 'error');
                 return;
             }
 
@@ -1099,7 +1139,7 @@
                 renderGestion();
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error al agregar producto', 'error');
+                showNotification('❌ Error al agregar producto', 'error');
             }
         }
 
@@ -1112,6 +1152,11 @@
         }
 
         async function saveEditedQuantity() {
+            if (!supabase) {
+                showNotification('❌ Supabase no disponible', 'error');
+                return;
+            }
+
             const newQty = parseInt(document.getElementById('editQtyInput').value);
 
             try {
@@ -1129,11 +1174,16 @@
                 renderGestion();
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error al actualizar', 'error');
+                showNotification('❌ Error al actualizar', 'error');
             }
         }
 
         async function deleteProduct(id) {
+            if (!supabase) {
+                showNotification('❌ Supabase no disponible', 'error');
+                return;
+            }
+
             if (!confirm('¿Eliminar este producto?')) return;
 
             try {
@@ -1150,7 +1200,7 @@
                 renderGestion();
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error al eliminar', 'error');
+                showNotification('❌ Error al eliminar', 'error');
             }
         }
 
@@ -1205,12 +1255,12 @@
             const qty = parseInt(document.getElementById('productQty').value) || 0;
             
             if (qty <= 0) {
-                showNotification('Ingresa una cantidad válida', 'error');
+                showNotification('❌ Ingresa una cantidad válida', 'error');
                 return;
             }
 
             if (qty > selectedProducts.disponible) {
-                showNotification(`Stock disponible: ${selectedProducts.disponible}`, 'error');
+                showNotification(`❌ Stock disponible: ${selectedProducts.disponible}`, 'error');
                 return;
             }
 
@@ -1268,12 +1318,12 @@
             const clientId = document.getElementById('clientId').value;
 
             if (!clientName || !clientId) {
-                showNotification('Completa nombre y cédula', 'error');
+                showNotification('❌ Completa nombre y cédula', 'error');
                 return;
             }
 
             if (!window.cart || window.cart.length === 0) {
-                showNotification('Agrega productos al carrito', 'error');
+                showNotification('❌ Agrega productos al carrito', 'error');
                 return;
             }
 
@@ -1292,6 +1342,11 @@
         }
 
         async function saveSale() {
+            if (!supabase) {
+                showNotification('❌ Supabase no disponible', 'error');
+                return;
+            }
+
             const clientName = document.getElementById('clientName').value;
             const clientId = document.getElementById('clientId').value;
             const total = window.cart.reduce((sum, item) => sum + item.subtotal, 0);
@@ -1336,11 +1391,11 @@
                 switchTab('ingresos');
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Error al registrar venta', 'error');
+                showNotification('❌ Error al registrar venta', 'error');
             }
         }
 
-        // ============ INGRESOS - CALENDARIO ============
+        // ============ CALENDARIO ============
         function initializeCalendar() {
             renderCalendar();
         }
@@ -1406,7 +1461,6 @@
             renderCalendar();
         }
 
-        // ============ VENTAS ============
         function renderSalesList() {
             renderFilteredSales(ventas);
         }
