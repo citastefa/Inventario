@@ -1,7 +1,3 @@
-<!-- 
-ZENSAVITA - Sistema de Gestión de Inventario y Ventas
-URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fLEScmo1gxsftaSKmjdzgqQod__kHdAMLPvs-Vo8aggsqeJjlBmt9u77/exec
--->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,6 +6,7 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
     <title>Zensavita - Sistema de Gestión</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/7.0.0/fuse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -29,7 +26,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             --error: #E8959B;
             --success: #8DD3B9;
             --warning: #F5D76E;
-            --pending: #E8C4B8;
         }
 
         body {
@@ -40,14 +36,12 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             min-height: 100vh;
         }
 
-        /* PANTALLA INICIAL - SELECCIÓN DE PERFIL */
         .profile-selector {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #F0F7F3 0%, #E8F3F8 100%);
         }
 
         .profile-card {
@@ -106,7 +100,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             box-shadow: 0 6px 20px rgba(107, 163, 135, 0.4);
         }
 
-        /* MAIN APP */
         .main-app {
             display: none;
         }
@@ -132,6 +125,12 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             color: var(--text);
         }
 
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
         .profile-badge {
             padding: 0.5rem 1rem;
             border-radius: 20px;
@@ -149,12 +148,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             color: white;
         }
 
-        .header-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
         .sync-indicator {
             display: flex;
             align-items: center;
@@ -162,35 +155,12 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             font-size: 0.85rem;
             padding: 0.5rem 1rem;
             border-radius: 8px;
-            background: var(--accent);
-        }
-
-        .sync-indicator.synced {
             background: var(--success);
-            color: white;
-        }
-
-        .sync-indicator.syncing {
-            background: var(--warning);
             color: white;
         }
 
         .sync-indicator.error {
             background: var(--error);
-            color: white;
-        }
-
-        .sync-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: white;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         .btn-logout {
@@ -201,20 +171,15 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.3s ease;
         }
 
-        .btn-logout:hover {
-            background: #D67A83;
-        }
-
-        /* NAV TABS */
         .nav-tabs {
             background: white;
             display: flex;
             gap: 0;
             border-bottom: 2px solid var(--border);
             padding: 0 2rem;
+            overflow-x: auto;
         }
 
         .nav-tab {
@@ -225,7 +190,7 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             font-size: 1rem;
             font-weight: 600;
             color: #999;
-            transition: all 0.3s ease;
+            white-space: nowrap;
             position: relative;
         }
 
@@ -243,7 +208,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             background: var(--primary);
         }
 
-        /* CONTENIDO */
         .content {
             flex: 1;
             padding: 2rem;
@@ -258,7 +222,28 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             display: block;
         }
 
-        /* TABLA INVENTARIO */
+        h2 {
+            margin-bottom: 1.5rem;
+            color: var(--primary-dark);
+        }
+
+        .search-box {
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
         .inventory-table {
             background: white;
             border-radius: 12px;
@@ -266,26 +251,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             max-height: 600px;
             overflow-y: auto;
-        }
-
-        .search-box {
-            margin-bottom: 1.5rem;
-            display: flex;
-            gap: 1rem;
-        }
-
-        .search-box input {
-            flex: 1;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
         }
 
         table {
@@ -297,6 +262,8 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             font-weight: 600;
+            position: sticky;
+            top: 0;
         }
 
         th {
@@ -321,24 +288,41 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             border-radius: 6px;
             font-size: 0.85rem;
             font-weight: 600;
+            color: white;
         }
 
         .status-ok {
             background: var(--success);
-            color: white;
         }
 
         .status-low {
             background: var(--warning);
-            color: white;
         }
 
         .status-out {
             background: var(--error);
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 0 0.2rem;
+        }
+
+        .btn-edit {
+            background: var(--secondary);
             color: white;
         }
 
-        /* FORMULARIO VENTA */
+        .btn-delete {
+            background: var(--error);
+            color: white;
+        }
+
         .form-section {
             background: white;
             border-radius: 12px;
@@ -355,7 +339,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             display: block;
             font-weight: 600;
             margin-bottom: 0.5rem;
-            color: var(--text);
         }
 
         input[type="text"],
@@ -366,11 +349,9 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             border: 2px solid var(--border);
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
         }
 
-        input[type="text"]:focus,
-        input[type="number"]:focus,
+        input:focus,
         select:focus {
             outline: none;
             border-color: var(--primary);
@@ -378,11 +359,10 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
 
         .form-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.5rem;
         }
 
-        /* CARRITO DE VENTA */
         .cart-items {
             background: white;
             border-radius: 12px;
@@ -391,30 +371,15 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             margin-bottom: 2rem;
         }
 
-        .cart-items h3 {
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-
         .cart-item {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 0.5fr 0.5fr;
+            grid-template-columns: 2fr 1fr 1fr 0.5fr;
             gap: 1rem;
             padding: 1rem;
             background: var(--accent);
             border-radius: 8px;
             margin-bottom: 0.5rem;
             align-items: center;
-        }
-
-        .cart-item-remove {
-            background: var(--error);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 0.4rem 0.8rem;
-            cursor: pointer;
-            font-weight: 600;
         }
 
         .cart-total {
@@ -428,7 +393,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             margin-top: 1rem;
         }
 
-        /* BOTONES */
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -454,64 +418,39 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             color: white;
         }
 
-        .btn-secondary:hover {
-            background: var(--secondary-dark);
-        }
-
         .btn-full {
             width: 100%;
             padding: 1rem;
         }
 
-        /* GRÁFICOS */
-        .charts-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .chart-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
-
-        .chart-card h3 {
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-
-        .chart-controls {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .chart-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid var(--border);
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .chart-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* CALENDARIO */
         .calendar-container {
             background: white;
             border-radius: 12px;
             padding: 1.5rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             margin-bottom: 2rem;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .calendar-nav button {
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
         }
 
         .calendar {
@@ -521,6 +460,12 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             margin-top: 1rem;
         }
 
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 0.5rem;
+        }
+
         .calendar-day {
             padding: 0.75rem;
             text-align: center;
@@ -528,6 +473,10 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             cursor: pointer;
             background: var(--accent);
             transition: all 0.3s ease;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .calendar-day:hover {
@@ -545,7 +494,46 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             border: 2px solid var(--success);
         }
 
-        /* MODAL CONFIRMACIÓN */
+        .calendar-day.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .chart-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .chart-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -567,24 +555,35 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             background: white;
             padding: 2rem;
             border-radius: 12px;
-            max-width: 400px;
-            text-align: center;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
 
-        .modal-content h2 {
-            margin-bottom: 1rem;
-            color: var(--text);
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
         }
 
-        .modal-content p {
-            margin-bottom: 1.5rem;
-            color: #666;
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #999;
         }
 
         .modal-buttons {
             display: flex;
             gap: 1rem;
+            margin-top: 1.5rem;
         }
 
         .modal-buttons button {
@@ -594,20 +593,18 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.3s ease;
         }
 
-        .modal-buttons .btn-cancel {
+        .btn-cancel {
             background: var(--border);
             color: var(--text);
         }
 
-        .modal-buttons .btn-confirm {
+        .btn-confirm {
             background: var(--primary);
             color: white;
         }
 
-        /* NOTIFICACIONES */
         .notification {
             position: fixed;
             top: 20px;
@@ -621,14 +618,8 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
         }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         .notification.success {
@@ -639,77 +630,50 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             background: var(--error);
         }
 
-        .notification.info {
-            background: var(--secondary);
+        .sales-list {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            max-height: 500px;
+            overflow-y: auto;
         }
 
-        /* PASSWORD MODAL */
-        .password-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 1001;
-            justify-content: center;
+        .sale-item {
+            padding: 1rem;
+            background: var(--accent);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
             align-items: center;
         }
 
-        .password-modal.active {
+        .sale-info {
             display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
         }
 
-        .password-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            max-width: 350px;
-            text-align: center;
+        .sale-name {
+            font-weight: 600;
+            color: var(--text);
         }
 
-        /* RESPONSIVE */
+        .sale-date {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
         @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .charts-container {
-                grid-template-columns: 1fr;
-            }
-
-            .cart-item {
-                grid-template-columns: 1fr;
-                gap: 0.5rem;
-            }
-
-            .profile-buttons {
-                gap: 1rem;
-            }
-
-            .btn-profile {
-                min-width: 150px;
-                padding: 1rem 1.5rem;
-            }
-
-            header {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .nav-tabs {
-                padding: 0 1rem;
-            }
-
-            .nav-tab {
-                padding: 0.75rem 1rem;
-                font-size: 0.9rem;
-            }
-
-            .content {
-                padding: 1rem;
-            }
+            .form-row { grid-template-columns: 1fr; }
+            .charts-container { grid-template-columns: 1fr; }
+            .cart-item { grid-template-columns: 1fr; }
+            .profile-buttons { gap: 1rem; }
+            .sale-item { grid-template-columns: 1fr; }
+            .nav-tabs { padding: 0 1rem; }
+            .content { padding: 1rem; }
         }
     </style>
 </head>
@@ -736,8 +700,7 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             <h1>🌿 Zensavita</h1>
             <div class="header-actions">
                 <div class="sync-indicator" id="syncIndicator">
-                    <span class="sync-dot"></span>
-                    <span id="syncText">Conectando...</span>
+                    ✅ Sincronizado
                 </div>
                 <span class="profile-badge" id="profileBadge"></span>
                 <button class="btn-logout" onclick="logout()">Salir</button>
@@ -746,6 +709,7 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
 
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('inventario')">📦 Inventario</button>
+            <button class="nav-tab" onclick="switchTab('gestion')">⚙️ Gestión</button>
             <button class="nav-tab" onclick="switchTab('venta')">💰 Registrar Venta</button>
             <button class="nav-tab" onclick="switchTab('ingresos')">📊 Ingresos</button>
         </div>
@@ -761,15 +725,66 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                     <table>
                         <thead>
                             <tr>
+                                <th>SKU</th>
                                 <th>Producto</th>
                                 <th>Cantidad</th>
                                 <th>Precio</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
-                        <tbody id="inventoryBody">
-                        </tbody>
+                        <tbody id="inventoryBody"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- GESTIÓN DE INVENTARIO -->
+            <div class="section" id="gestion">
+                <h2>⚙️ Gestión de Inventario</h2>
+                
+                <div class="form-section">
+                    <h3>Agregar Nuevo Producto</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newSku">SKU</label>
+                            <input type="text" id="newSku" placeholder="Ej: SKU-124">
+                        </div>
+                        <div class="form-group">
+                            <label for="newNombre">Nombre Producto</label>
+                            <input type="text" id="newNombre" placeholder="Nombre del producto">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newCantidad">Cantidad</label>
+                            <input type="number" id="newCantidad" value="10" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPrecio">Precio Zensavita</label>
+                            <input type="number" id="newPrecio" step="0.1" placeholder="Ej: 77.9">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPrecioD">Precio Doctora</label>
+                        <input type="number" id="newPrecioD" step="0.1" placeholder="Ej: 75.9">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="addNewProduct()">+ Agregar Producto</button>
+                </div>
+
+                <div class="form-section">
+                    <h3>Editar Cantidad de Productos</h3>
+                    <div class="inventory-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad Actual</th>
+                                    <th>Nueva Cantidad</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gestionBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -790,7 +805,7 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
 
                     <div class="form-group">
                         <label for="productSearch">Buscar Producto</label>
-                        <input type="text" id="productSearch" placeholder="Escribe el nombre del producto...">
+                        <input type="text" id="productSearch" placeholder="Escribe el nombre...">
                         <div id="productSuggestions" style="margin-top: 0.5rem;"></div>
                     </div>
 
@@ -800,7 +815,7 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                             <input type="number" id="productQty" min="1" value="1">
                         </div>
                         <div class="form-group">
-                            <label for="productPrice">Precio Unitario</label>
+                            <label for="productPrice">Precio</label>
                             <input type="number" id="productPrice" disabled style="background: var(--accent);">
                         </div>
                     </div>
@@ -821,7 +836,13 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                 <h2>📊 Ingresos y Ventas</h2>
 
                 <div class="calendar-container">
-                    <h3>Selecciona una Fecha</h3>
+                    <div class="calendar-header">
+                        <h3 id="calendarMonth">Enero 2024</h3>
+                        <div class="calendar-nav">
+                            <button onclick="prevMonth()">◀ Anterior</button>
+                            <button onclick="nextMonth()">Siguiente ▶</button>
+                        </div>
+                    </div>
                     <div class="calendar" id="calendar"></div>
                 </div>
 
@@ -832,29 +853,29 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
 
                 <div class="charts-container">
                     <div class="chart-card">
-                        <h3>Ventas por Período</h3>
+                        <h3>Ingresos por Período</h3>
                         <div class="chart-controls">
                             <button class="chart-btn active" onclick="updateCharts('day')">Día</button>
                             <button class="chart-btn" onclick="updateCharts('week')">Semana</button>
                             <button class="chart-btn" onclick="updateCharts('month')">Mes</button>
                         </div>
-                        <canvas id="revenueChart"></canvas>
+                        <canvas id="revenueChart" height="80"></canvas>
                     </div>
 
                     <div class="chart-card">
                         <h3>Cantidad Vendida</h3>
                         <div class="chart-controls">
-                            <button class="chart-btn active" onclick="updateCharts('quantity-day')">Día</button>
-                            <button class="chart-btn" onclick="updateCharts('quantity-week')">Semana</button>
-                            <button class="chart-btn" onclick="updateCharts('quantity-month')">Mes</button>
+                            <button class="chart-btn active" onclick="updateQuantityCharts('day')">Día</button>
+                            <button class="chart-btn" onclick="updateQuantityCharts('week')">Semana</button>
+                            <button class="chart-btn" onclick="updateQuantityCharts('month')">Mes</button>
                         </div>
-                        <canvas id="quantityChart"></canvas>
+                        <canvas id="quantityChart" height="80"></canvas>
                     </div>
                 </div>
 
-                <div class="form-section">
-                    <h3>Ventas del Periodo</h3>
-                    <div id="salesList" style="max-height: 400px; overflow-y: auto;"></div>
+                <div class="sales-list">
+                    <h3>Ventas Registradas</h3>
+                    <div id="salesList"></div>
                 </div>
             </div>
         </div>
@@ -872,171 +893,151 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
         </div>
     </div>
 
+    <div class="modal" id="editQuantityModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="editProductName">Editar Cantidad</h2>
+                <button class="close-modal" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label>Cantidad Actual:</label>
+                <input type="number" id="editQtyDisplay" disabled style="background: var(--accent);">
+            </div>
+            <div class="form-group">
+                <label>Nueva Cantidad:</label>
+                <input type="number" id="editQtyInput" min="0" value="10">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="saveEditedQuantity()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // ============ CONFIGURACIÓN GOOGLE SHEETS ============
-        // ⚠️ REEMPLAZA ESTA URL POR LA QUE GOOGLE TE GENERÓ
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEyJpEDir7fLEScmo1gxsftaSKmjdzgqQod__kHdAMLPvs-Vo8aggsqeJjlBmt9u77/exec';
-        
-        const PASSWORD = '2464';
-        const DOCTORA_DISCOUNT = 1.9; // Descuento en miles de pesos colombianos
+        // ============ CONFIGURACIÓN SUPABASE ============
+        const supabaseUrl = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
+        const supabaseKey = 'sb_publishable_sx8C7YLNQezLjtEPYCqe1Q_IhWXzuAk';
+        const { createClient } = window.supabase;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
         // ============ ESTADO GLOBAL ============
         let currentProfile = null;
         let inventory = [];
-        let ventasDoctora = [];
-        let ventasZensavita = [];
-        let selectedProducts = [];
+        let ventas = [];
+        let selectedProducts = {};
         let revenueChart = null;
         let quantityChart = null;
-        let currentChartPeriod = 'day';
-        let selectedDate = new Date();
+        let currentMonth = new Date();
+        let editingProductId = null;
 
-        // ============ FUNCIONES INICIALES ============
-        function selectProfile(profile) {
+        // ============ INICIALIZACIÓN ============
+        async function selectProfile(profile) {
             currentProfile = profile;
             document.getElementById('profileSelector').style.display = 'none';
             document.getElementById('mainApp').classList.add('active');
             document.getElementById('profileBadge').textContent = profile === 'doctora' ? '👨‍⚕️ Doctora Teresa' : '🏪 Zensavita';
             document.getElementById('profileBadge').className = `profile-badge ${profile}`;
             
-            initializeApp();
+            await loadInventory();
+            await loadVentas();
+            setupRealtime();
+            setupEventListeners();
+            renderInventory();
+            renderGestion();
+            initializeCalendar();
         }
 
         function logout() {
             currentProfile = null;
-            selectedProducts = [];
             document.getElementById('profileSelector').style.display = 'flex';
             document.getElementById('mainApp').classList.remove('active');
         }
 
-        async function initializeApp() {
-            updateSyncStatus('Cargando datos...', 'syncing');
-            try {
-                await loadInventoryFromSheets();
-                await loadSalesFromSheets();
-                renderInventory();
-                setupEventListeners();
-                initializeCalendar();
-                updateSyncStatus('Sincronizado', 'synced');
-            } catch (error) {
-                console.error('Error inicializando:', error);
-                updateSyncStatus('Error de conexión', 'error');
-                loadFromLocalStorage();
-            }
+        // ============ SUPABASE REALTIME ============
+        function setupRealtime() {
+            // Escuchar cambios en inventario
+            supabase
+                .channel('inventario-changes')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'inventario' },
+                    (payload) => {
+                        console.log('Cambio en inventario:', payload);
+                        loadInventory().then(() => {
+                            renderInventory();
+                            renderGestion();
+                        });
+                    }
+                )
+                .subscribe();
+
+            // Escuchar cambios en ventas
+            supabase
+                .channel('ventas-changes')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'ventas' },
+                    (payload) => {
+                        console.log('Nueva venta:', payload);
+                        loadVentas().then(() => {
+                            renderSalesList();
+                            updateCharts('day');
+                        });
+                    }
+                )
+                .subscribe();
         }
 
-        // ============ GOOGLE SHEETS API ============
-        async function loadInventoryFromSheets() {
+        // ============ CARGAR DATOS ============
+        async function loadInventory() {
             try {
-                const response = await fetch(APPS_SCRIPT_URL + '?action=getInventory');
-                const data = await response.json();
-                
-                if (data.success && data.data && data.data.length > 1) {
-                    inventory = data.data.slice(1).map(row => ({
-                        sku: row[0] || '',
-                        nombre: row[1] || '',
-                        cantidad: parseInt(row[2]) || 0,
-                        precio_zensavita: parseFloat(row[3]) || 0,
-                        precio_doctora: parseFloat(row[4]) || 0
-                    }));
-                }
-                saveToLocalStorage();
+                const { data, error } = await supabase
+                    .from('inventario')
+                    .select('*')
+                    .order('sku', { ascending: true });
+
+                if (error) throw error;
+                inventory = data || [];
+                updateSyncStatus('Sincronizado', 'success');
             } catch (error) {
                 console.error('Error cargando inventario:', error);
-                loadFromLocalStorage();
+                updateSyncStatus('Error de conexión', 'error');
             }
         }
 
-        async function loadSalesFromSheets() {
+        async function loadVentas() {
             try {
-                const profile = currentProfile;
-                const response = await fetch(APPS_SCRIPT_URL + `?action=getSales&profile=${profile}`);
-                const data = await response.json();
-                
-                if (data.success && data.data && data.data.length > 1) {
-                    const ventas = data.data.slice(1).map(row => ({
-                        id: row[0] || '',
-                        fecha: row[1] || '',
-                        cliente: row[2] || '',
-                        cedula: row[3] || '',
-                        productos: JSON.parse(row[4] || '[]'),
-                        total: parseFloat(row[5]) || 0
-                    }));
-                    
-                    if (profile === 'doctora') {
-                        ventasDoctora = ventas;
-                    } else {
-                        ventasZensavita = ventas;
-                    }
-                }
-                saveToLocalStorage();
+                const { data, error } = await supabase
+                    .from('ventas')
+                    .select('*')
+                    .eq('perfil', currentProfile)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                ventas = data || [];
             } catch (error) {
                 console.error('Error cargando ventas:', error);
-                loadFromLocalStorage();
             }
         }
 
-        async function saveSaleToSheets(saleData) {
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'saveSale',
-                        profile: currentProfile,
-                        data: JSON.stringify(saleData)
-                    })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        updateSyncStatus('Venta sincronizada', 'synced');
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.error('Error guardando venta:', error);
-                updateSyncStatus('Error: Guardado local', 'error');
-            }
-            return false;
-        }
-
-        // ============ LOCALSTORAGE SYNC ============
-        function saveToLocalStorage() {
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            localStorage.setItem('ventasDoctora', JSON.stringify(ventasDoctora));
-            localStorage.setItem('ventasZensavita', JSON.stringify(ventasZensavita));
-        }
-
-        function loadFromLocalStorage() {
-            const inv = localStorage.getItem('inventory');
-            if (inv) inventory = JSON.parse(inv);
-            
-            const vd = localStorage.getItem('ventasDoctora');
-            if (vd) ventasDoctora = JSON.parse(vd);
-            
-            const vz = localStorage.getItem('ventasZensavita');
-            if (vz) ventasZensavita = JSON.parse(vz);
-        }
-
-        // ============ UI - INVENTARIO ============
+        // ============ INVENTARIO ============
         function renderInventory() {
             const tbody = document.getElementById('inventoryBody');
-            tbody.innerHTML = inventory.map((item, idx) => {
+            tbody.innerHTML = inventory.map(item => {
                 let status = 'status-ok';
-                let statusText = '✅ Stock OK';
+                let statusText = '✅ OK';
                 if (item.cantidad === 0) {
                     status = 'status-out';
                     statusText = '❌ Agotado';
                 } else if (item.cantidad < 5) {
                     status = 'status-low';
-                    statusText = '⚠️ Stock Bajo';
+                    statusText = '⚠️ Bajo';
                 }
 
                 const precio = currentProfile === 'doctora' ? item.precio_doctora : item.precio_zensavita;
                 
                 return `
                     <tr>
+                        <td>${item.sku}</td>
                         <td><strong>${item.nombre}</strong></td>
                         <td>${item.cantidad}</td>
                         <td>$${precio.toLocaleString('es-CO', {minimumFractionDigits: 2})}</td>
@@ -1046,6 +1047,114 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             }).join('');
         }
 
+        function renderGestion() {
+            const tbody = document.getElementById('gestionBody');
+            tbody.innerHTML = inventory.map(item => `
+                <tr>
+                    <td><strong>${item.nombre}</strong></td>
+                    <td>${item.cantidad}</td>
+                    <td><input type="number" value="${item.cantidad}" min="0" id="qty-${item.id}" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;"></td>
+                    <td>
+                        <button class="btn-small btn-edit" onclick="editProductQuantity(${item.id}, '${item.nombre}', ${item.cantidad})">Editar</button>
+                        <button class="btn-small btn-delete" onclick="deleteProduct(${item.id})">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addNewProduct() {
+            const sku = document.getElementById('newSku').value.trim();
+            const nombre = document.getElementById('newNombre').value.trim();
+            const cantidad = parseInt(document.getElementById('newCantidad').value) || 0;
+            const precioZ = parseFloat(document.getElementById('newPrecio').value) || 0;
+            const precioD = parseFloat(document.getElementById('newPrecioD').value) || 0;
+
+            if (!sku || !nombre || !precioZ) {
+                showNotification('Completa todos los campos requeridos', 'error');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('inventario')
+                    .insert([{
+                        sku,
+                        nombre,
+                        cantidad,
+                        precio_zensavita: precioZ,
+                        precio_doctora: precioD
+                    }]);
+
+                if (error) throw error;
+
+                document.getElementById('newSku').value = '';
+                document.getElementById('newNombre').value = '';
+                document.getElementById('newCantidad').value = '10';
+                document.getElementById('newPrecio').value = '';
+                document.getElementById('newPrecioD').value = '';
+
+                showNotification('✅ Producto agregado', 'success');
+                await loadInventory();
+                renderInventory();
+                renderGestion();
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al agregar producto', 'error');
+            }
+        }
+
+        function editProductQuantity(id, nombre, cantidad) {
+            editingProductId = id;
+            document.getElementById('editProductName').textContent = nombre;
+            document.getElementById('editQtyDisplay').value = cantidad;
+            document.getElementById('editQtyInput').value = cantidad;
+            document.getElementById('editQuantityModal').classList.add('active');
+        }
+
+        async function saveEditedQuantity() {
+            const newQty = parseInt(document.getElementById('editQtyInput').value);
+
+            try {
+                const { error } = await supabase
+                    .from('inventario')
+                    .update({ cantidad: newQty })
+                    .eq('id', editingProductId);
+
+                if (error) throw error;
+
+                showNotification('✅ Cantidad actualizada', 'success');
+                closeEditModal();
+                await loadInventory();
+                renderInventory();
+                renderGestion();
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al actualizar', 'error');
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('¿Eliminar este producto?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('inventario')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                showNotification('✅ Producto eliminado', 'success');
+                await loadInventory();
+                renderInventory();
+                renderGestion();
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al eliminar', 'error');
+            }
+        }
+
+        // ============ VENTAS ============
         function setupEventListeners() {
             document.getElementById('searchInventory').addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase();
@@ -1065,16 +1174,12 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                     return;
                 }
 
-                const fuseOptions = {
-                    keys: ['nombre'],
-                    threshold: 0.3
-                };
-                const fuse = new Fuse(inventory, fuseOptions);
+                const fuse = new Fuse(inventory, { keys: ['nombre'], threshold: 0.3 });
                 const results = fuse.search(search).slice(0, 5);
 
                 suggestions.innerHTML = results.map(result => `
                     <div style="padding: 0.5rem; background: var(--accent); border-radius: 4px; margin: 0.3rem 0; cursor: pointer;" 
-                         onclick="selectProductForSale('${result.item.sku}', '${result.item.nombre}', ${result.item.cantidad}, ${currentProfile === 'doctora' ? result.item.precio_doctora : result.item.precio_zensavita})">
+                         onclick="selectProductForSale(${result.item.id}, '${result.item.sku}', '${result.item.nombre}', ${result.item.cantidad}, ${currentProfile === 'doctora' ? result.item.precio_doctora : result.item.precio_zensavita})">
                         ${result.item.nombre} (${result.item.cantidad} disponibles)
                     </div>
                 `).join('');
@@ -1082,14 +1187,13 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
 
             document.getElementById('searchByCedula').addEventListener('input', (e) => {
                 const cedula = e.target.value;
-                const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
                 const filtered = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
-                renderSalesList(filtered);
+                renderFilteredSales(filtered);
             });
         }
 
-        function selectProductForSale(sku, nombre, disponible, precio) {
-            selectedProducts = { sku, nombre, disponible, precio };
+        function selectProductForSale(id, sku, nombre, disponible, precio) {
+            selectedProducts = { id, sku, nombre, disponible, precio };
             document.getElementById('productSearch').value = nombre;
             document.getElementById('productPrice').value = precio.toFixed(2);
             document.getElementById('productSuggestions').innerHTML = '';
@@ -1112,6 +1216,7 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
 
             if (!window.cart) window.cart = [];
             window.cart.push({
+                id: selectedProducts.id,
                 sku: selectedProducts.sku,
                 nombre: selectedProducts.nombre,
                 cantidad: qty,
@@ -1142,10 +1247,8 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                     <div class="cart-item">
                         <strong>${item.nombre}</strong>
                         <div>${item.cantidad}x $${item.precio_unitario.toFixed(2)}</div>
-                        <div>Subtotal: $${item.subtotal.toLocaleString('es-CO', {minimumFractionDigits: 2})}</div>
-                        <input type="number" value="${item.cantidad}" min="1" max="${selectedProducts.disponible}" 
-                               onchange="updateCartItem(${idx}, this.value)">
-                        <button class="cart-item-remove" onclick="removeFromCart(${idx})">❌</button>
+                        <div>$${item.subtotal.toLocaleString('es-CO', {minimumFractionDigits: 2})}</div>
+                        <button onclick="removeFromCart(${idx})" style="background: var(--error); color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0.4rem 0.8rem;">❌</button>
                     </div>
                 `;
             }).join('');
@@ -1153,12 +1256,6 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             document.getElementById('cartTotal').textContent = total.toLocaleString('es-CO', {minimumFractionDigits: 2});
             document.getElementById('cartItemsContainer').style.display = 'block';
             document.getElementById('registerSaleBtn').style.display = 'block';
-        }
-
-        function updateCartItem(idx, newQty) {
-            window.cart[idx].cantidad = parseInt(newQty);
-            window.cart[idx].subtotal = window.cart[idx].cantidad * window.cart[idx].precio_unitario;
-            renderCart();
         }
 
         function removeFromCart(idx) {
@@ -1189,133 +1286,165 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             document.getElementById('confirmModal').classList.remove('active');
         }
 
+        function closeEditModal() {
+            document.getElementById('editQuantityModal').classList.remove('active');
+            editingProductId = null;
+        }
+
         async function saveSale() {
             const clientName = document.getElementById('clientName').value;
             const clientId = document.getElementById('clientId').value;
             const total = window.cart.reduce((sum, item) => sum + item.subtotal, 0);
 
-            const saleData = {
-                cliente: clientName,
-                cedula: clientId,
-                productos: window.cart,
-                total: total
-            };
+            try {
+                const { error: ventaError } = await supabase
+                    .from('ventas')
+                    .insert([{
+                        fecha: new Date().toISOString().split('T')[0],
+                        cliente: clientName,
+                        cedula: clientId,
+                        perfil: currentProfile,
+                        productos: window.cart,
+                        total: total
+                    }]);
 
-            await saveSaleToSheets(saleData);
+                if (ventaError) throw ventaError;
 
-            window.cart.forEach(item => {
-                const product = inventory.find(p => p.sku === item.sku);
-                if (product) {
-                    product.cantidad -= item.cantidad;
+                // Actualizar inventario
+                for (const item of window.cart) {
+                    const producto = inventory.find(p => p.id === item.id);
+                    if (producto) {
+                        const { error: updateError } = await supabase
+                            .from('inventario')
+                            .update({ cantidad: producto.cantidad - item.cantidad })
+                            .eq('id', item.id);
+                        
+                        if (updateError) throw updateError;
+                    }
                 }
-            });
 
-            const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
-            ventas.push({
-                id: Date.now(),
-                fecha: new Date().toISOString().split('T')[0],
-                ...saleData
-            });
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientId').value = '';
+                window.cart = [];
+                renderCart();
 
-            document.getElementById('clientName').value = '';
-            document.getElementById('clientId').value = '';
-            window.cart = [];
-            renderCart();
-            renderInventory();
-
-            closeModal();
-            showNotification('✅ Venta registrada exitosamente', 'success');
-            switchTab('ingresos');
+                closeModal();
+                showNotification('✅ Venta registrada exitosamente', 'success');
+                await loadInventory();
+                await loadVentas();
+                renderInventory();
+                switchTab('ingresos');
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al registrar venta', 'error');
+            }
         }
 
-        // ============ INGRESOS - GRÁFICOS ============
+        // ============ INGRESOS - CALENDARIO ============
         function initializeCalendar() {
+            renderCalendar();
+        }
+
+        function renderCalendar() {
             const calendar = document.getElementById('calendar');
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+
+            document.getElementById('calendarMonth').textContent = currentMonth.toLocaleString('es-CO', { month: 'long', year: 'numeric' });
 
             calendar.innerHTML = '';
+            
+            const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            weekDays.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day-header';
+                dayEl.textContent = day;
+                calendar.appendChild(dayEl);
+            });
+
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
             const daysInMonth = lastDay.getDate();
 
-            const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-            weekDays.forEach(day => {
-                const dayEl = document.createElement('div');
-                dayEl.textContent = day;
-                dayEl.style.fontWeight = '600';
-                dayEl.style.textAlign = 'center';
-                calendar.appendChild(dayEl);
-            });
-
             for (let i = 0; i < firstDay.getDay(); i++) {
-                calendar.appendChild(document.createElement('div'));
+                const emptyEl = document.createElement('div');
+                emptyEl.className = 'calendar-day empty';
+                calendar.appendChild(emptyEl);
             }
 
-            const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayEl = document.createElement('div');
-                dayEl.textContent = day;
                 dayEl.className = 'calendar-day';
+                dayEl.textContent = day;
 
                 const dayDate = new Date(year, month, day);
                 const dateStr = dayDate.toISOString().split('T')[0];
-                const daysSales = ventas.filter(v => v.fecha === dateStr);
+                const daySales = ventas.filter(v => v.fecha === dateStr);
 
-                if (daysSales.length > 0) {
+                if (daySales.length > 0) {
                     dayEl.classList.add('has-sales');
-                    dayEl.title = `${daysSales.length} venta(s)`;
+                    dayEl.title = `${daySales.length} venta(s)`;
                 }
 
                 dayEl.addEventListener('click', () => {
                     document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
                     dayEl.classList.add('selected');
-                    selectedDate = dayDate;
-                    renderSalesList(daysSales);
+                    renderFilteredSales(daySales);
                 });
 
                 calendar.appendChild(dayEl);
             }
         }
 
-        function updateCharts(period) {
-            currentChartPeriod = period;
-            const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
+        function prevMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            renderCalendar();
+        }
 
+        function nextMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            renderCalendar();
+        }
+
+        // ============ VENTAS ============
+        function renderSalesList() {
+            renderFilteredSales(ventas);
+        }
+
+        function renderFilteredSales(salesList) {
+            const list = document.getElementById('salesList');
+            if (salesList.length === 0) {
+                list.innerHTML = '<p style="color: #999; text-align: center;">Sin ventas registradas</p>';
+                return;
+            }
+            list.innerHTML = salesList.map(venta => `
+                <div class="sale-item">
+                    <div class="sale-info">
+                        <span class="sale-name">${venta.cliente}</span>
+                        <span class="sale-date">${venta.cedula} • ${venta.fecha}</span>
+                    </div>
+                    <div>${venta.productos.length} producto(s)</div>
+                    <div style="font-weight: 600; color: var(--primary-dark);">$${venta.total.toLocaleString('es-CO', {minimumFractionDigits: 2})}</div>
+                </div>
+            `).join('');
+        }
+
+        // ============ GRÁFICOS ============
+        async function updateCharts(period) {
             document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
 
-            if (period.includes('day')) {
-                renderRevenueChart(ventas, 'day');
-                if (period.includes('quantity')) {
-                    renderQuantityChart(ventas, 'day');
-                }
-            } else if (period.includes('week')) {
-                renderRevenueChart(ventas, 'week');
-                if (period.includes('quantity')) {
-                    renderQuantityChart(ventas, 'week');
-                }
-            } else if (period.includes('month')) {
-                renderRevenueChart(ventas, 'month');
-                if (period.includes('quantity')) {
-                    renderQuantityChart(ventas, 'month');
-                }
-            }
-        }
-
-        function renderRevenueChart(ventas, period) {
+            const data = aggregateSales(ventas, period);
+            
             const ctx = document.getElementById('revenueChart').getContext('2d');
-            const data = aggregateSalesByPeriod(ventas, period);
-
             if (revenueChart) revenueChart.destroy();
-
+            
             revenueChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.labels,
                     datasets: [{
-                        label: 'Ingresos ($)',
+                        label: 'Ingresos',
                         data: data.values,
                         backgroundColor: '#A8D5BA',
                         borderColor: '#6BA387',
@@ -1325,22 +1454,22 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { display: true }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    maintainAspectRatio: true,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: true } }
                 }
             });
         }
 
-        function renderQuantityChart(ventas, period) {
+        async function updateQuantityCharts(period) {
+            document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const data = aggregateQuantity(ventas, period);
+            
             const ctx = document.getElementById('quantityChart').getContext('2d');
-            const data = aggregateQuantityByPeriod(ventas, period);
-
             if (quantityChart) quantityChart.destroy();
-
+            
             quantityChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1357,30 +1486,27 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { display: true }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+                    maintainAspectRatio: true,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: true } }
                 }
             });
         }
 
-        function aggregateSalesByPeriod(ventas, period) {
+        function aggregateSales(salesList, period) {
             const grouped = {};
 
-            ventas.forEach(venta => {
+            salesList.forEach(venta => {
                 const date = new Date(venta.fecha);
                 let key;
 
                 if (period === 'day') {
                     key = venta.fecha;
                 } else if (period === 'week') {
-                    const week = getWeekNumber(date);
+                    const week = Math.ceil((date.getDate()) / 7);
                     key = `Sem ${week}`;
                 } else if (period === 'month') {
-                    key = date.toLocaleString('es-CO', {month: 'short', year: 'numeric'});
+                    key = date.toLocaleString('es-CO', { month: 'short', year: 'numeric' });
                 }
 
                 grouped[key] = (grouped[key] || 0) + venta.total;
@@ -1392,10 +1518,10 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             };
         }
 
-        function aggregateQuantityByPeriod(ventas, period) {
+        function aggregateQuantity(salesList, period) {
             const grouped = {};
 
-            ventas.forEach(venta => {
+            salesList.forEach(venta => {
                 const date = new Date(venta.fecha);
                 let key;
                 const qty = venta.productos.reduce((sum, p) => sum + p.cantidad, 0);
@@ -1403,10 +1529,10 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
                 if (period === 'day') {
                     key = venta.fecha;
                 } else if (period === 'week') {
-                    const week = getWeekNumber(date);
+                    const week = Math.ceil((date.getDate()) / 7);
                     key = `Sem ${week}`;
                 } else if (period === 'month') {
-                    key = date.toLocaleString('es-CO', {month: 'short', year: 'numeric'});
+                    key = date.toLocaleString('es-CO', { month: 'short', year: 'numeric' });
                 }
 
                 grouped[key] = (grouped[key] || 0) + qty;
@@ -1418,62 +1544,26 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             };
         }
 
-        function getWeekNumber(date) {
-            const first = new Date(date.getFullYear(), 0, 1);
-            const days = Math.floor((date - first) / (24 * 60 * 60 * 1000));
-            return Math.ceil(days / 7);
-        }
-
-        function renderSalesList(ventas) {
-            const list = document.getElementById('salesList');
-            
-            if (ventas.length === 0) {
-                list.innerHTML = '<p style="color: #999; text-align: center;">Sin ventas registradas</p>';
-                return;
-            }
-
-            list.innerHTML = ventas.map(venta => `
-                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <div>
-                            <strong>${venta.cliente}</strong> (${venta.cedula})
-                            <div style="font-size: 0.85rem; color: #666;">
-                                ${new Date(venta.fecha).toLocaleDateString('es-CO')} - ${venta.productos.length} producto(s)
-                            </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <strong>$${venta.total.toLocaleString('es-CO', {minimumFractionDigits: 2})}</strong>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
         // ============ NAVEGACIÓN ============
         function switchTab(tab) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-
             document.getElementById(tab).classList.add('active');
             event.target.classList.add('active');
 
             if (tab === 'ingresos') {
                 setTimeout(() => {
-                    const ventas = currentProfile === 'doctora' ? ventasDoctora : ventasZensavita;
-                    renderRevenueChart(ventas, 'day');
-                    renderQuantityChart(ventas, 'day');
-                    renderSalesList(ventas);
+                    updateCharts('day');
+                    updateQuantityCharts('day');
+                    renderSalesList();
                 }, 100);
             }
         }
 
-        // ============ UTILIDADES ============
         function updateSyncStatus(message, status) {
             const indicator = document.getElementById('syncIndicator');
-            const text = document.getElementById('syncText');
-            
-            indicator.className = `sync-indicator ${status}`;
-            text.textContent = message;
+            indicator.className = `sync-indicator ${status === 'success' ? '' : status}`;
+            indicator.textContent = message;
         }
 
         function showNotification(message, type) {
@@ -1481,14 +1571,8 @@ URL de Google Apps Script: https://script.google.com/macros/s/AKfycbzEyJpEDir7fL
             notif.className = `notification ${type}`;
             notif.textContent = message;
             document.body.appendChild(notif);
-
-            setTimeout(() => {
-                notif.remove();
-            }, 3000);
+            setTimeout(() => notif.remove(), 3000);
         }
-
-        // ============ INICIALIZACIÓN ============
-        loadFromLocalStorage();
     </script>
 </body>
 </html>
