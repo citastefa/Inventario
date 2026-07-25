@@ -122,12 +122,26 @@
         .product-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; align-items: center; }
         .product-row input { padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; }
         .product-row button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+        .calendar-container { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .calendar-header button { padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
+        .calendar-day-header { font-weight: 600; text-align: center; padding: 0.5rem; background: var(--primary); color: white; border-radius: 4px; }
+        .calendar-day { padding: 1rem; background: var(--accent); border-radius: 8px; text-align: center; cursor: pointer; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; border: 2px solid transparent; }
+        .calendar-day:hover { background: #E8D9C3; border-color: var(--primary); }
+        .calendar-day.other-month { color: #999; background: #f5f5f5; }
+        .calendar-day.has-sales { background: var(--success); color: white; font-weight: 600; }
+        .calendar-day.has-sales:hover { background: #7BC89E; }
+        .calendar-day .day-num { font-weight: 600; font-size: 1.1rem; }
+        .calendar-day .day-sales { font-size: 0.85rem; margin-top: 0.5rem; }
+        .day-details { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             .content { padding: 1rem; }
             .charts-container { grid-template-columns: 1fr; }
             .product-row { grid-template-columns: 1fr; }
             .cart-item { grid-template-columns: 1fr; }
+            .calendar-day { padding: 0.5rem; min-height: 60px; }
         }
     </style>
 </head>
@@ -227,6 +241,22 @@
 
             <div class="section" id="ingresos">
                 <h2>📊 Ingresos y Ventas</h2>
+
+                <div class="calendar-container">
+                    <h3>📅 Calendario de Ventas</h3>
+                    <div class="calendar-header">
+                        <button onclick="window.prevMonth()">← Mes Anterior</button>
+                        <h3 id="calendarMonth" style="margin: 0;"></h3>
+                        <button onclick="window.nextMonth()">Mes Siguiente →</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+
+                <div class="day-details" id="dayDetails" style="display: none;">
+                    <h3 id="dayDetailsTitle"></h3>
+                    <div id="dayDetailsList"></div>
+                </div>
+
                 <div class="charts-container">
                     <div class="chart-card">
                         <h3>Ingresos por Período</h3>
@@ -247,6 +277,7 @@
                         <canvas id="unitsChart"></canvas>
                     </div>
                 </div>
+
                 <div class="form-section">
                     <label for="searchByCedula">Buscar Venta por Cédula</label>
                     <input type="text" id="searchByCedula" placeholder="Ingresa la cédula..." onkeyup="window.filterSalesList()">
@@ -297,7 +328,7 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzhLWsZOmmzfuMEUdoPASc8O8LOE8m3TvFIvtl6g4LHXZexv3lNhYEDaz2VAKjgATZ8/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyBRhCQhXYGouPId_4fZOdmqG6cXSwYXAw2PLeCKVSOjW4aq7-4fRtVWGBHPQjshnXy/exec';
 
         let currentProfile = null;
         let inventory = [];
@@ -307,6 +338,7 @@
         let ingresoChart = null;
         let unitsChart = null;
         let syncInterval = null;
+        let calendarDate = new Date();
 
         window.loginProfile = function(profile) {
             currentProfile = profile;
@@ -359,6 +391,7 @@
             event.target.classList.add('active');
             if (tab === 'ingresos') {
                 loadSales();
+                renderCalendar();
                 updateCharts('day');
             } else if (tab === 'gestion') {
                 renderManagement();
@@ -555,6 +588,70 @@
             const filtered = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
             if (filtered.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin resultados</p>'; return; }
             list.innerHTML = filtered.map(venta => `<div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between;"><div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha}</small></div><div style="font-weight: 600; color: var(--primary-dark);">$${(venta.total * 1000).toLocaleString('es-CO')}</div></div>`).join('');
+        }
+
+        window.renderCalendar = function() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDate = firstDay.getDay();
+
+            document.getElementById('calendarMonth').textContent = calendarDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+
+            const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            let html = dayNames.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+
+            for (let i = 0; i < startDate; i++) {
+                html += '<div class="calendar-day other-month"></div>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayVentas = ventas.filter(v => v.fecha === dateStr);
+                const totalVentas = dayVentas.reduce((s, v) => s + v.total, 0);
+                const hasVentas = dayVentas.length > 0;
+
+                html += `
+                    <div class="calendar-day ${hasVentas ? 'has-sales' : ''}" onclick="window.showDayDetails('${dateStr}')">
+                        <div class="day-num">${day}</div>
+                        ${hasVentas ? `<div class="day-sales">${dayVentas.length} venta${dayVentas.length > 1 ? 's' : ''}<br>$${(totalVentas * 1000).toLocaleString('es-CO')}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            document.getElementById('calendarGrid').innerHTML = html;
+        }
+
+        window.showDayDetails = function(dateStr) {
+            const dayVentas = ventas.filter(v => v.fecha === dateStr);
+            if (dayVentas.length === 0) {
+                document.getElementById('dayDetails').style.display = 'none';
+                return;
+            }
+
+            const fecha = new Date(dateStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('dayDetailsTitle').textContent = `Ventas del ${fecha}`;
+
+            document.getElementById('dayDetailsList').innerHTML = dayVentas.map(venta => `
+                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <strong>${venta.cliente}</strong> (${venta.cedula})<br>
+                    <small>Total: $${(venta.total * 1000).toLocaleString('es-CO')}</small>
+                </div>
+            `).join('');
+
+            document.getElementById('dayDetails').style.display = 'block';
+        }
+
+        window.prevMonth = function() {
+            calendarDate.setMonth(calendarDate.getMonth() - 1);
+            window.renderCalendar();
+        }
+
+        window.nextMonth = function() {
+            calendarDate.setMonth(calendarDate.getMonth() + 1);
+            window.renderCalendar();
         }
 
         window.updateCharts = function(period) {
