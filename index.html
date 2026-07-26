@@ -1123,12 +1123,12 @@
                     return;
                 }
 
-                const { error } = await window.supabaseClient
+                const { error: deleteError } = await window.supabaseClient
                     .from('ventas')
                     .delete()
                     .eq('id', window.currentVentaId);
 
-                if (error) throw error;
+                if (deleteError) throw deleteError;
 
                 if (venta.productos && venta.productos.length > 0) {
                     for (const item of venta.productos) {
@@ -1145,13 +1145,15 @@
                     }
                 }
 
-                showNotification('✅ Venta cancelada y inventario restaurado', 'success');
+                showNotification('✅ Venta cancelada e inventario restaurado', 'success');
                 document.getElementById('deletePasswordModal').classList.remove('active');
                 document.getElementById('ventaDetailsModal').classList.remove('active');
 
-                await new Promise(r => setTimeout(r, 500));
+                await new Promise(r => setTimeout(r, 1000));
                 await syncData();
                 await loadSales();
+                window.renderCalendar();
+                window.updateCharts('day');
                 window.renderSalesList();
             } catch (err) {
                 showNotification(`❌ Error: ${err.message}`, 'error');
