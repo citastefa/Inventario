@@ -967,13 +967,17 @@
         }
 
         window.renderSalesList = function() {
+            const cedula = document.getElementById('searchByCedula').value;
             const list = document.getElementById('salesList');
-            if (ventas.length === 0) {
+
+            const salesToShow = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
+
+            if (salesToShow.length === 0) {
                 list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas registradas</p>';
                 return;
             }
 
-            list.innerHTML = ventas.slice(0, 20).map(venta => `
+            list.innerHTML = salesToShow.slice(0, 20).map(venta => `
                 <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer;" onclick="window.showVentaDetails(${venta.id})">
                     <div style="display: flex; justify-content: space-between;">
                         <div>
@@ -1113,6 +1117,12 @@
             }
 
             try {
+                const venta = ventas.find(v => v.id === window.currentVentaId);
+                if (!venta) {
+                    showNotification('❌ Venta no encontrada', 'error');
+                    return;
+                }
+
                 const { error } = await window.supabaseClient
                     .from('ventas')
                     .delete()
@@ -1120,10 +1130,27 @@
 
                 if (error) throw error;
 
-                showNotification('✅ Venta eliminada', 'success');
+                if (venta.productos && venta.productos.length > 0) {
+                    for (const item of venta.productos) {
+                        const producto = inventory.find(p => p.id === item.id);
+                        if (producto) {
+                            const nuevaCantidad = producto.cantidad + item.cantidad;
+                            const { error: updateError } = await window.supabaseClient
+                                .from('inventario')
+                                .update({ cantidad: nuevaCantidad })
+                                .eq('id', item.id);
+
+                            if (updateError) throw updateError;
+                        }
+                    }
+                }
+
+                showNotification('✅ Venta cancelada y inventario restaurado', 'success');
                 document.getElementById('deletePasswordModal').classList.remove('active');
                 document.getElementById('ventaDetailsModal').classList.remove('active');
 
+                await new Promise(r => setTimeout(r, 500));
+                await syncData();
                 await loadSales();
                 window.renderSalesList();
             } catch (err) {
