@@ -216,6 +216,31 @@
                     <button class="btn btn-primary btn-full" onclick="window.saveNewProduct()">+ Agregar Producto</button>
                 </div>
 
+                <div class="form-section">
+                    <h3>📦 Agregar Mercancía (Productos Existentes)</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="existingProduct">Seleccionar Producto</label>
+                            <select id="existingProduct">
+                                <option value="">-- Selecciona un producto --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="mercanciaQty">Cantidad a Agregar</label>
+                            <input type="number" id="mercanciaQty" min="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="mercancia PrecioZensavita">Precio Zensavita (opcional)</label>
+                            <input type="number" id="mercanciaPrecioZensavita" min="0" step="0.1" placeholder="Dejar en blanco para no cambiar">
+                        </div>
+                        <div class="form-group">
+                            <label for="mercanciaPrecioDoc">Precio Doctora (opcional)</label>
+                            <input type="number" id="mercanciaPrecioDoc" min="0" step="0.1" placeholder="Dejar en blanco para no cambiar">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="window.addMercancia()">✅ Agregar Mercancía</button>
+                </div>
+
                 <h3>📝 Productos Actuales</h3>
                 <div class="inventory-table">
                     <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--primary); color: white; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;">
@@ -261,7 +286,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="productPrice">Precio Unitario</label>
-                                    <input type="number" id="productPrice" disabled style="background: var(--accent);">
+                                    <input type="number" id="productPrice" min="0" step="100">
                                 </div>
                             </div>
                             <button class="btn btn-secondary btn-full" onclick="window.addProductToCart()">+ Agregar al Carrito</button>
@@ -349,6 +374,34 @@
             <div class="modal-buttons">
                 <button class="btn-cancel" onclick="window.closeConfirmModal()">Cancelar</button>
                 <button class="btn-confirm" onclick="window.saveSale()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="ventaDetailsModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0;">Detalles de Venta</h2>
+                <button class="btn-logout" onclick="document.getElementById('ventaDetailsModal').classList.remove('active')" style="padding: 0.4rem 0.8rem; font-size: 1.2rem;">✕</button>
+            </div>
+            <div id="ventaDetailsContent" style="margin: 1.5rem 0; max-height: 400px; overflow-y: auto;"></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="document.getElementById('ventaDetailsModal').classList.remove('active')">Cerrar</button>
+                <button class="btn-danger" onclick="window.showDeletePassword()">🗑️ Eliminar Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="deletePasswordModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>Ingresa Contraseña para Eliminar</h2>
+            <div class="form-group" style="margin: 1.5rem 0;">
+                <label for="deletePassword">Contraseña</label>
+                <input type="password" id="deletePassword" placeholder="••••" onkeypress="if(event.key==='Enter') window.confirmDeleteVenta()">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="document.getElementById('deletePasswordModal').classList.remove('active')">Cancelar</button>
+                <button class="btn-confirm" onclick="window.confirmDeleteVenta()">Eliminar</button>
             </div>
         </div>
     </div>
@@ -480,7 +533,7 @@
                     <td>${item.sku}</td>
                     <td><strong>${item.nombre}</strong></td>
                     <td>${qty}</td>
-                    <td>$${precio.toLocaleString('es-CO')}</td>
+                    <td>$${(precio * 1000).toLocaleString('es-CO')}</td>
                     <td><span class="status-badge ${status}">${statusText}</span></td>
                 </tr>`;
             }).join('');
@@ -494,6 +547,12 @@
         }
 
         window.renderManagement = function() {
+            // Llenar select de productos existentes
+            const select = document.getElementById('existingProduct');
+            select.innerHTML = '<option value="">-- Selecciona un producto --</option>' + inventory.map(item =>
+                `<option value="${item.id}">${item.nombre} (${item.sku}) - Stock: ${item.cantidad}</option>`
+            ).join('');
+
             const body = document.getElementById('managementBody');
             if (!inventory || inventory.length === 0) {
                 body.innerHTML = '<div style="text-align: center; color: #999; padding: 2rem;">No hay productos</div>';
@@ -550,9 +609,53 @@
             }
         }
 
+        window.addMercancia = async function() {
+            const productId = parseInt(document.getElementById('existingProduct').value);
+            const cantidad = parseInt(document.getElementById('mercanciaQty').value) || 0;
+            const precioZensavita = document.getElementById('mercanciaPrecioZensavita').value || null;
+            const precioDoc = document.getElementById('mercanciaPrecioDoc').value || null;
+
+            if (!productId) {
+                showNotification('❌ Selecciona un producto', 'error');
+                return;
+            }
+
+            if (cantidad <= 0) {
+                showNotification('❌ Cantidad debe ser mayor a 0', 'error');
+                return;
+            }
+
+            try {
+                const producto = inventory.find(p => p.id === productId);
+                const nuevaCantidad = (producto.cantidad || 0) + cantidad;
+
+                const updateData = { cantidad: nuevaCantidad };
+                if (precioZensavita) updateData.precio_zensavita = parseFloat(precioZensavita);
+                if (precioDoc) updateData.precio_doctora = parseFloat(precioDoc);
+
+                const { error } = await window.supabaseClient
+                    .from('inventario')
+                    .update(updateData)
+                    .eq('id', productId);
+
+                if (error) throw error;
+
+                showNotification(`✅ ${cantidad} unidades agregadas a ${producto.nombre}`, 'success');
+                document.getElementById('existingProduct').value = '';
+                document.getElementById('mercanciaQty').value = '1';
+                document.getElementById('mercanciaPrecioZensavita').value = '';
+                document.getElementById('mercanciaPrecioDoc').value = '';
+
+                await syncData();
+                window.renderManagement();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+
         window.updateQty = async function(id, valor) {
             try {
-                const { error } = await supabase
+                const { error } = await window.supabaseClient
                     .from('inventario')
                     .update({ cantidad: parseInt(valor) })
                     .eq('id', id);
@@ -569,7 +672,7 @@
             if (!confirm('¿Eliminar producto?')) return;
 
             try {
-                const { error } = await supabase
+                const { error } = await window.supabaseClient
                     .from('inventario')
                     .delete()
                     .eq('id', id);
@@ -606,7 +709,7 @@
                 const precio = currentProfile === 'doctora' ? p.precio_doctora : p.precio_zensavita;
                 return `<div class="suggestion-item" onclick="window.selectProduct(${p.id}, '${p.nombre}', ${p.cantidad}, ${precio})">
                     <strong>${p.nombre}</strong> (${p.sku})<br>
-                    <small>${p.cantidad} disponibles - $${precio.toLocaleString('es-CO')}</small>
+                    <small>${p.cantidad} disponibles - $${(precio * 1000).toLocaleString('es-CO')}</small>
                 </div>`;
             }).join('');
 
@@ -618,10 +721,10 @@
             document.getElementById('productSearch').value = nombre;
             document.getElementById('productQty').value = '1';
             document.getElementById('productQty').max = disponible;
-            document.getElementById('productPrice').value = precio.toFixed(2);
+            document.getElementById('productPrice').value = (precio * 1000).toFixed(0);
             document.getElementById('productDetails').innerHTML = `
                 <div style="background: var(--accent); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; color: var(--primary-dark);">
-                    ${nombre} - $${precio.toLocaleString('es-CO')}
+                    ${nombre} - $${(precio * 1000).toLocaleString('es-CO')}
                 </div>
             `;
             document.getElementById('productSuggestions').style.display = 'none';
@@ -636,6 +739,7 @@
             }
 
             const qty = parseInt(document.getElementById('productQty').value) || 0;
+            const precioEditado = parseFloat(document.getElementById('productPrice').value) || selectedProduct.precio * 1000;
 
             if (qty <= 0) {
                 showNotification('❌ Cantidad debe ser mayor a 0', 'error');
@@ -651,8 +755,8 @@
                 id: selectedProduct.id,
                 nombre: selectedProduct.nombre,
                 cantidad: qty,
-                precio_unitario: selectedProduct.precio,
-                subtotal: qty * selectedProduct.precio
+                precio_unitario: precioEditado / 1000,
+                subtotal: (qty * precioEditado) / 1000
             });
 
             window.renderCartSummary();
@@ -690,10 +794,10 @@
                     <div class="cart-item">
                         <div>
                             <strong>${item.nombre}</strong><br>
-                            <small>${item.cantidad}x $${item.precio_unitario.toLocaleString('es-CO')}</small>
+                            <small>${item.cantidad}x $${(item.precio_unitario * 1000).toLocaleString('es-CO')}</small>
                         </div>
                         <div>
-                            <strong>$${item.subtotal.toLocaleString('es-CO')}</strong>
+                            <strong>$${(item.subtotal * 1000).toLocaleString('es-CO')}</strong>
                             <button class="btn btn-danger btn-small" onclick="window.removeFromCart(${idx})">❌</button>
                         </div>
                     </div>
@@ -858,14 +962,14 @@
             }
 
             list.innerHTML = ventas.slice(0, 20).map(venta => `
-                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
+                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer;" onclick="window.showVentaDetails(${venta.id})">
                     <div style="display: flex; justify-content: space-between;">
                         <div>
                             <strong>${venta.cliente}</strong> (${venta.cedula})<br>
                             <small>${venta.fecha} - ${venta.perfil}</small>
                         </div>
                         <div style="font-weight: 600; color: var(--primary-dark);">
-                            $${venta.total.toLocaleString('es-CO')}
+                            $${(venta.total * 1000).toLocaleString('es-CO')}
                         </div>
                     </div>
                 </div>
@@ -883,14 +987,14 @@
             }
 
             list.innerHTML = filtered.map(venta => `
-                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
+                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer;" onclick="window.showVentaDetails(${venta.id})">
                     <div style="display: flex; justify-content: space-between;">
                         <div>
                             <strong>${venta.cliente}</strong> (${venta.cedula})<br>
                             <small>${venta.fecha}</small>
                         </div>
                         <div style="font-weight: 600; color: var(--primary-dark);">
-                            $${venta.total.toLocaleString('es-CO')}
+                            $${(venta.total * 1000).toLocaleString('es-CO')}
                         </div>
                     </div>
                 </div>
@@ -949,6 +1053,70 @@
             `).join('');
 
             document.getElementById('dayDetails').style.display = 'block';
+        }
+
+        window.showVentaDetails = function(ventaId) {
+            const venta = ventas.find(v => v.id === ventaId);
+            if (!venta) return;
+
+            let productosHTML = '<div style="background: var(--accent); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">';
+            productosHTML += `<strong>Cliente:</strong> ${venta.cliente}<br>`;
+            productosHTML += `<strong>Cédula:</strong> ${venta.cedula}<br>`;
+            productosHTML += `<strong>Perfil:</strong> ${venta.perfil}<br>`;
+            productosHTML += `<strong>Fecha:</strong> ${venta.fecha}<br>`;
+            productosHTML += '</div>';
+
+            productosHTML += '<h3>Productos:</h3>';
+            if (venta.productos && venta.productos.length > 0) {
+                productosHTML += venta.productos.map(p => `
+                    <div style="background: white; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem;">
+                        <strong>${p.nombre}</strong><br>
+                        <small>Cantidad: ${p.cantidad} × $${(p.precio_unitario * 1000).toLocaleString('es-CO')} = $${(p.subtotal * 1000).toLocaleString('es-CO')}</small>
+                    </div>
+                `).join('');
+            } else {
+                productosHTML += '<p style="color: #999; font-size: 0.9rem;">Venta especial (sin detalles de productos)</p>';
+            }
+
+            productosHTML += `<div style="background: var(--primary); color: white; padding: 1rem; border-radius: 8px; margin-top: 1rem; text-align: right; font-size: 1.2rem; font-weight: 600;">
+                Total: $${(venta.total * 1000).toLocaleString('es-CO')}
+            </div>`;
+
+            document.getElementById('ventaDetailsContent').innerHTML = productosHTML;
+            window.currentVentaId = ventaId;
+            document.getElementById('ventaDetailsModal').classList.add('active');
+        }
+
+        window.showDeletePassword = function() {
+            document.getElementById('deletePassword').value = '';
+            document.getElementById('deletePasswordModal').classList.add('active');
+        }
+
+        window.confirmDeleteVenta = async function() {
+            const password = document.getElementById('deletePassword').value;
+
+            if (password !== '2464') {
+                showNotification('❌ Contraseña incorrecta', 'error');
+                return;
+            }
+
+            try {
+                const { error } = await window.supabaseClient
+                    .from('ventas')
+                    .delete()
+                    .eq('id', window.currentVentaId);
+
+                if (error) throw error;
+
+                showNotification('✅ Venta eliminada', 'success');
+                document.getElementById('deletePasswordModal').classList.remove('active');
+                document.getElementById('ventaDetailsModal').classList.remove('active');
+
+                await loadSales();
+                window.renderSalesList();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
         }
 
         window.prevMonth = function() {
