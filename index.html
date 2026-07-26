@@ -357,10 +357,7 @@
         const SUPABASE_URL = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqYWF0ZmJ4aXhuY2N2bnh5aHJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5ODU1NTgsImV4cCI6MjEwMDU2MTU1OH0.qw_KkOl6dNAJMuG22skW-mYSdh_UQKJ3RjMplgeaVU8';
 
-        let supabase = null;
-        if (typeof window.supabase !== 'undefined') {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
+        window.supabaseClient = null;
 
         let currentProfile = null;
         let inventory = [];
@@ -373,8 +370,15 @@
         let calendarDate = new Date();
 
         window.loginProfile = async function(profile) {
-            if (!supabase) {
-                alert('⏳ Supabase aún se está cargando. Intenta de nuevo en 2 segundos.');
+            // Esperar a que Supabase esté listo
+            let attempts = 0;
+            while (!window.supabaseClient && attempts < 10) {
+                await new Promise(r => setTimeout(r, 500));
+                attempts++;
+            }
+
+            if (!window.supabaseClient) {
+                alert('❌ Error: No se pudo conectar a Supabase. Recarga la página.');
                 return;
             }
 
@@ -408,7 +412,7 @@
                 indicator.classList.remove('offline');
                 indicator.classList.add('syncing');
 
-                const { data, error } = await supabase
+                const { data, error } = await window.supabaseClient
                     .from('inventario')
                     .select('*')
                     .order('id', { ascending: true });
@@ -520,7 +524,7 @@
             }
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await window.supabaseClient
                     .from('inventario')
                     .insert([{
                         nombre,
@@ -723,7 +727,7 @@
             }
 
             try {
-                const { error } = await supabase
+                const { error } = await window.supabaseClient
                     .from('ventas')
                     .insert([{
                         cliente: clientName,
@@ -781,7 +785,7 @@
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
             try {
-                const { error: saleError } = await supabase
+                const { error: saleError } = await window.supabaseClient
                     .from('ventas')
                     .insert([{
                         cliente: clientName,
@@ -823,7 +827,7 @@
 
         async function loadSales() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await window.supabaseClient
                     .from('ventas')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -1057,27 +1061,31 @@
 
         // Inicializar Supabase cuando la librería esté disponible
         function initSupabase() {
-            if (typeof window.supabase !== 'undefined' && !supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Zensavita LISTO - Supabase conectado');
+            if (typeof window.supabase !== 'undefined' && !window.supabaseClient) {
+                try {
+                    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    console.log('✅ Zensavita LISTO - Supabase conectado');
+                } catch (err) {
+                    console.error('Error inicializando Supabase:', err);
+                }
             }
         }
 
-        // Reintentar cada 500ms hasta que Supabase esté disponible
+        // Reintentar cada 300ms hasta que Supabase esté disponible
         const retryInit = setInterval(() => {
-            if (typeof window.supabase !== 'undefined') {
+            if (typeof window.supabase !== 'undefined' && !window.supabaseClient) {
                 clearInterval(retryInit);
                 initSupabase();
             }
-        }, 500);
+        }, 300);
 
-        // Timeout de 5 segundos
+        // Timeout de 3 segundos
         setTimeout(() => {
-            if (!supabase) {
+            if (!window.supabaseClient) {
                 console.warn('⚠️ Supabase tardó en cargar. Reintentando...');
                 initSupabase();
             }
-        }, 5000);
+        }, 3000);
     </script>
 </body>
 </html>
