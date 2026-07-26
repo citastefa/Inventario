@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zensavita - Sistema de Gestión</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -70,8 +71,9 @@
         .nav-tab.active::after {
             content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: var(--primary);
         }
-        .content { flex: 1; padding: 2rem; overflow-y: auto; }
-        .section { display: none; }
+        .content { flex: 1; padding: 2rem; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .content.full { grid-template-columns: 1fr; }
+        .section { display: none; grid-column: 1 / -1; }
         .section.active { display: block; }
         h2 { margin-bottom: 1.5rem; color: var(--primary-dark); }
         h3 { margin-bottom: 1rem; color: var(--primary-dark); }
@@ -91,18 +93,19 @@
         .form-section { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
         .form-group { margin-bottom: 1.5rem; }
         label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
-        input[type="text"], input[type="number"] { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; }
-        input:focus { outline: none; border-color: var(--primary); }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
         .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-        .cart-items { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
-        .cart-item { display: grid; grid-template-columns: 2fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; align-items: center; }
-        .cart-total { padding: 1rem; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-radius: 8px; font-size: 1.3rem; font-weight: 600; text-align: right; margin-top: 1rem; }
+        .cart-side { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); max-height: 800px; overflow-y: auto; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--accent); border-radius: 6px; margin-bottom: 0.5rem; }
+        .cart-total { padding: 1rem; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-radius: 8px; font-size: 1.3rem; font-weight: 600; text-align: right; margin: 1rem 0; }
         .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; }
         .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(107, 163, 135, 0.3); }
         .btn-secondary { background: var(--secondary); color: white; }
         .btn-danger { background: var(--error); color: white; }
         .btn-full { width: 100%; padding: 1rem; }
+        .btn-small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal.active { display: flex; }
         .modal-content { background: white; padding: 2rem; border-radius: 12px; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
@@ -114,7 +117,7 @@
         @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .notification.success { background: var(--success); }
         .notification.error { background: var(--error); }
-        .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
+        .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 2rem; margin-bottom: 2rem; grid-column: 1 / -1; }
         .chart-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
         .chart-controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
         .chart-btn { padding: 0.5rem 1rem; border: 2px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
@@ -122,26 +125,24 @@
         .product-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; align-items: center; }
         .product-row input { padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; }
         .product-row button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
-        .calendar-container { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+        .product-suggestions { background: white; border: 1px solid var(--border); border-radius: 8px; max-height: 300px; overflow-y: auto; margin-top: 0.5rem; }
+        .suggestion-item { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+        .suggestion-item:hover { background: var(--accent); }
+        .calendar-container { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; grid-column: 1 / -1; }
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
         .calendar-header button { padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
         .calendar-day-header { font-weight: 600; text-align: center; padding: 0.5rem; background: var(--primary); color: white; border-radius: 4px; }
         .calendar-day { padding: 1rem; background: var(--accent); border-radius: 8px; text-align: center; cursor: pointer; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; border: 2px solid transparent; }
         .calendar-day:hover { background: #E8D9C3; border-color: var(--primary); }
-        .calendar-day.other-month { color: #999; background: #f5f5f5; }
         .calendar-day.has-sales { background: var(--success); color: white; font-weight: 600; }
         .calendar-day.has-sales:hover { background: #7BC89E; }
-        .calendar-day .day-num { font-weight: 600; font-size: 1.1rem; }
-        .calendar-day .day-sales { font-size: 0.85rem; margin-top: 0.5rem; }
-        .day-details { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+        .day-details { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 2rem; grid-column: 1 / -1; }
         @media (max-width: 768px) {
+            .content { grid-template-columns: 1fr; }
             .form-row { grid-template-columns: 1fr; }
-            .content { padding: 1rem; }
-            .charts-container { grid-template-columns: 1fr; }
             .product-row { grid-template-columns: 1fr; }
-            .cart-item { grid-template-columns: 1fr; }
-            .calendar-day { padding: 0.5rem; min-height: 60px; }
+            .charts-container { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -151,8 +152,8 @@
             <h1>🌿 Zensavita</h1>
             <p>Sistema de Gestión de Inventario y Ventas</p>
             <div class="profile-buttons">
-                <button class="btn-profile doctora" onclick="window.loginProfile('doctora'); return false;">👨‍⚕️ Doctora Teresa</button>
-                <button class="btn-profile zensavita" onclick="window.loginProfile('zensavita'); return false;">🏪 Zensavita</button>
+                <button class="btn-profile doctora" onclick="window.loginProfile('doctora')">👨‍⚕️ Doctora Teresa</button>
+                <button class="btn-profile zensavita" onclick="window.loginProfile('zensavita')">🏪 Zensavita</button>
             </div>
         </div>
     </div>
@@ -163,18 +164,18 @@
             <div class="header-actions">
                 <div class="sync-indicator synced" id="syncIndicator">✅ Sincronizado</div>
                 <span class="profile-badge" id="profileBadge"></span>
-                <button class="btn-logout" onclick="window.logoutNow(); return false;">Salir</button>
+                <button class="btn-logout" onclick="window.logoutNow()">Salir</button>
             </div>
         </header>
 
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="window.switchTab('inventario'); return false;">📦 Inventario</button>
-            <button class="nav-tab" onclick="window.switchTab('gestion'); return false;">⚙️ Gestión</button>
-            <button class="nav-tab" onclick="window.switchTab('venta'); return false;">💰 Registrar Venta</button>
-            <button class="nav-tab" onclick="window.switchTab('ingresos'); return false;">📊 Ingresos</button>
+            <button class="nav-tab active" onclick="window.switchTab('inventario')">📦 Inventario</button>
+            <button class="nav-tab" onclick="window.switchTab('gestion')">⚙️ Gestión</button>
+            <button class="nav-tab" onclick="window.switchTab('venta')">💰 Registrar Venta</button>
+            <button class="nav-tab" onclick="window.switchTab('ingresos')">📊 Ingresos</button>
         </div>
 
-        <div class="content">
+        <div class="content full">
             <div class="section active" id="inventario">
                 <h2>📦 Inventario</h2>
                 <div class="search-box">
@@ -183,7 +184,7 @@
                 <div class="inventory-table">
                     <table>
                         <thead>
-                            <tr><th>Producto</th><th>Cantidad</th><th>Precio (COP)</th><th>Estado</th></tr>
+                            <tr><th>SKU</th><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Estado</th></tr>
                         </thead>
                         <tbody id="inventoryBody"></tbody>
                     </table>
@@ -192,51 +193,102 @@
 
             <div class="section" id="gestion">
                 <h2>⚙️ Gestión de Inventario</h2>
-                <button class="btn btn-primary" onclick="window.openAddProductModal(); return false;" style="margin-bottom: 2rem;">+ Agregar Producto</button>
+                <div class="form-section">
+                    <h3>➕ Agregar Nuevo Producto</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newNombre">Nombre Producto</label>
+                            <input type="text" id="newNombre" placeholder="Ej: Vitamina C">
+                        </div>
+                        <div class="form-group">
+                            <label for="newCantidad">Cantidad</label>
+                            <input type="number" id="newCantidad" min="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPrecio">Precio Zensavita</label>
+                            <input type="number" id="newPrecio" min="0" step="0.1" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPrecioDoc">Precio Doctora</label>
+                            <input type="number" id="newPrecioDoc" min="0" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="window.saveNewProduct()">+ Agregar Producto</button>
+                </div>
+
+                <h3>📝 Productos Actuales</h3>
                 <div class="inventory-table">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--primary); color: white; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;">
-                        <div>Producto</div><div>Cantidad</div><div>Precio</div><div></div>
+                    <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1fr 0.5fr; gap: 1rem; padding: 1rem; background: var(--primary); color: white; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;">
+                        <div>SKU</div><div>Producto</div><div>Cantidad</div><div>Zensavita</div><div>Doctora</div><div></div>
                     </div>
                     <div id="managementBody"></div>
                 </div>
             </div>
 
             <div class="section" id="venta">
-                <h2>💰 Registrar Venta</h2>
-                <div class="form-section">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="clientName">Nombre Cliente</label>
-                            <input type="text" id="clientName" placeholder="Ej: Juan Pérez">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                    <div>
+                        <h2>💰 Registrar Venta</h2>
+                        <div class="form-section">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="clientName">Nombre Cliente</label>
+                                    <input type="text" id="clientName" placeholder="Ej: Juan Pérez">
+                                </div>
+                                <div class="form-group">
+                                    <label for="clientId">Cédula</label>
+                                    <input type="text" id="clientId" placeholder="Ej: 1234567890">
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="clientId">Cédula</label>
-                            <input type="text" id="clientId" placeholder="Ej: 1234567890">
+
+                        <div class="form-section">
+                            <h3>🔍 Buscar Producto</h3>
+                            <div class="form-group">
+                                <label for="productSearch">Nombre del Producto</label>
+                                <input type="text" id="productSearch" placeholder="Escribe para buscar..." onkeyup="window.searchProducts()">
+                            </div>
+                            <div id="productSuggestions" class="product-suggestions" style="display: none;"></div>
+                        </div>
+
+                        <div class="form-section" id="productOptionsSection" style="display: none;">
+                            <h3>📊 Detalles del Producto</h3>
+                            <div id="productDetails"></div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="productQty">Cantidad</label>
+                                    <input type="number" id="productQty" min="1" value="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="productPrice">Precio Unitario</label>
+                                    <input type="number" id="productPrice" disabled style="background: var(--accent);">
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-full" onclick="window.addProductToCart()">+ Agregar al Carrito</button>
+                        </div>
+
+                        <div class="form-section" id="specialSection" style="display: none;">
+                            <h3>💵 Valor Total de Venta (Doctora)</h3>
+                            <p style="color: #666; margin-bottom: 1rem;">Ingresa el valor total cuando no es por unidad</p>
+                            <div class="form-group">
+                                <label for="totalVentaEspecial">Valor Total</label>
+                                <input type="number" id="totalVentaEspecial" min="0" step="0.1" placeholder="0">
+                            </div>
+                            <button class="btn btn-secondary btn-full" onclick="window.addSpecialSale()">💾 Registrar Venta Especial</button>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="productSearch">Buscar Producto</label>
-                        <input type="text" id="productSearch" placeholder="Escribe el nombre..." onkeyup="window.searchProductsForSale()">
-                        <div id="productSuggestions" style="margin-top: 0.5rem;"></div>
-                    </div>
-                    <div class="form-row" id="productOptionsRow" style="display: none;">
-                        <div class="form-group">
-                            <label for="productQty">Cantidad</label>
-                            <input type="number" id="productQty" min="1" value="1">
+
+                    <div class="cart-side">
+                        <h3>🛒 Resumen de Venta</h3>
+                        <div id="cartSummary">
+                            <p style="color: #999; text-align: center;">Selecciona productos para empezar</p>
                         </div>
-                        <div class="form-group">
-                            <label for="productPrice">Precio Unitario</label>
-                            <input type="number" id="productPrice" disabled style="background: var(--accent);">
+                        <div class="cart-total" id="cartTotalDiv" style="display: none;">
+                            Total: $<span id="cartTotal">0</span>
                         </div>
+                        <button class="btn btn-primary btn-full" id="registerSaleBtn" style="display: none; margin-top: 1rem;" onclick="window.confirmSale()">✅ Registrar Venta</button>
                     </div>
-                    <button class="btn btn-secondary" id="addProductBtn" style="display: none;" onclick="window.addProductToCart(); return false;">+ Agregar al Carrito</button>
                 </div>
-                <div class="cart-items" id="cartItemsContainer" style="display: none;">
-                    <h3>Productos en la Venta</h3>
-                    <div id="cartItems"></div>
-                    <div class="cart-total">Total: $<span id="cartTotal">0</span></div>
-                </div>
-                <button class="btn btn-primary btn-full" id="registerSaleBtn" style="display: none;" onclick="window.confirmSale(); return false;">Registrar Venta</button>
             </div>
 
             <div class="section" id="ingresos">
@@ -261,18 +313,18 @@
                     <div class="chart-card">
                         <h3>Ingresos por Período</h3>
                         <div class="chart-controls">
-                            <button class="chart-btn active" onclick="window.updateCharts('day'); return false;">Día</button>
-                            <button class="chart-btn" onclick="window.updateCharts('week'); return false;">Semana</button>
-                            <button class="chart-btn" onclick="window.updateCharts('month'); return false;">Mes</button>
+                            <button class="chart-btn active" onclick="window.updateCharts('day')">Día</button>
+                            <button class="chart-btn" onclick="window.updateCharts('week')">Semana</button>
+                            <button class="chart-btn" onclick="window.updateCharts('month')">Mes</button>
                         </div>
                         <canvas id="ingresoChart"></canvas>
                     </div>
                     <div class="chart-card">
                         <h3>Unidades Vendidas</h3>
                         <div class="chart-controls">
-                            <button class="chart-btn active" onclick="window.updateUnitsChart('day'); return false;">Día</button>
-                            <button class="chart-btn" onclick="window.updateUnitsChart('week'); return false;">Semana</button>
-                            <button class="chart-btn" onclick="window.updateUnitsChart('month'); return false;">Mes</button>
+                            <button class="chart-btn active" onclick="window.updateUnitsChart('day')">Día</button>
+                            <button class="chart-btn" onclick="window.updateUnitsChart('week')">Semana</button>
+                            <button class="chart-btn" onclick="window.updateUnitsChart('month')">Mes</button>
                         </div>
                         <canvas id="unitsChart"></canvas>
                     </div>
@@ -295,40 +347,17 @@
             <h2>Confirmar Venta</h2>
             <p id="confirmMessage"></p>
             <div class="modal-buttons">
-                <button class="btn-cancel" onclick="window.closeConfirmModal(); return false;">Cancelar</button>
-                <button class="btn-confirm" onclick="window.saveSale(); return false;">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="addProductModal">
-        <div class="modal-content">
-            <h2>Agregar Producto</h2>
-            <div class="form-group">
-                <label for="newProductSku">SKU</label>
-                <input type="text" id="newProductSku" placeholder="Ej: SKU-100">
-            </div>
-            <div class="form-group">
-                <label for="newProductName">Nombre Producto</label>
-                <input type="text" id="newProductName" placeholder="Ej: Vitamina C">
-            </div>
-            <div class="form-group">
-                <label for="newProductQty">Cantidad</label>
-                <input type="number" id="newProductQty" min="1" value="1">
-            </div>
-            <div class="form-group">
-                <label for="newProductPrice">Precio (COP)</label>
-                <input type="number" id="newProductPrice" min="0" value="0">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancel" onclick="window.closeAddProductModal(); return false;">Cancelar</button>
-                <button class="btn-confirm" onclick="window.saveNewProduct(); return false;">Agregar</button>
+                <button class="btn-cancel" onclick="window.closeConfirmModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="window.saveSale()">Confirmar</button>
             </div>
         </div>
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyBRhCQhXYGouPId_4fZOdmqG6cXSwYXAw2PLeCKVSOjW4aq7-4fRtVWGBHPQjshnXy/exec';
+        const SUPABASE_URL = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqYWF0ZmJ4aXhuY2N2bnh5aHJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5ODU1NTgsImV4cCI6MjEwMDU2MTU1OH0.qw_KkOl6dNAJMuG22skW-mYSdh_UQKJ3RjMplgeaVU8';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentProfile = null;
         let inventory = [];
@@ -340,13 +369,20 @@
         let syncInterval = null;
         let calendarDate = new Date();
 
-        window.loginProfile = function(profile) {
+        window.loginProfile = async function(profile) {
             currentProfile = profile;
             document.getElementById('profileSelector').style.display = 'none';
             document.getElementById('mainApp').classList.add('active');
             document.getElementById('profileBadge').textContent = profile === 'doctora' ? '👨‍⚕️ Doctora Teresa' : '🏪 Zensavita';
-            syncData();
-            syncInterval = setInterval(syncData, 2000);
+
+            if (profile === 'doctora') {
+                document.getElementById('specialSection').style.display = 'block';
+            } else {
+                document.getElementById('specialSection').style.display = 'none';
+            }
+
+            await syncData();
+            syncInterval = setInterval(syncData, 3000);
         }
 
         window.logoutNow = function() {
@@ -364,19 +400,30 @@
                 indicator.classList.remove('offline');
                 indicator.classList.add('syncing');
 
-                const response = await fetch(`${API_URL}?action=getInventario`);
-                const data = await response.json();
+                const { data, error } = await supabase
+                    .from('inventario')
+                    .select('*')
+                    .order('id', { ascending: true });
 
-                if (data && Array.isArray(data)) {
-                    inventory = data;
-                    window.renderInventory();
-                }
+                if (error) throw error;
+
+                inventory = (data || []).map(item => ({
+                    id: item.id,
+                    sku: item.sku || `SKU-${item.id}`,
+                    nombre: item.nombre || 'Sin nombre',
+                    cantidad: item.cantidad || 0,
+                    precio: parseFloat(item.precio || 0),
+                    precio_doctora: parseFloat(item.precio_doctora || item.precio || 0),
+                    precio_zensavita: parseFloat(item.precio_zensavita || item.precio || 0)
+                }));
+
+                window.renderInventory();
 
                 indicator.textContent = '✅ Sincronizado';
                 indicator.classList.remove('syncing');
                 indicator.classList.add('synced');
             } catch (err) {
-                console.error('❌ Error:', err);
+                console.error('Error:', err);
                 const indicator = document.getElementById('syncIndicator');
                 indicator.textContent = '❌ Sin conexión';
                 indicator.classList.remove('syncing');
@@ -384,28 +431,46 @@
             }
         }
 
-        window.switchTab = function(tab) {
+        window.switchTab = async function(tab) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
             event.target.classList.add('active');
-            if (tab === 'ingresos') {
-                loadSales();
-                renderCalendar();
-                updateCharts('day');
-            } else if (tab === 'gestion') {
-                renderManagement();
+
+            if (tab === 'gestion') {
+                window.renderManagement();
+            } else if (tab === 'venta') {
+                document.getElementById('cartSummary').innerHTML = '<p style="color: #999; text-align: center;">Selecciona productos para empezar</p>';
+                cart = [];
+            } else if (tab === 'ingresos') {
+                await loadSales();
+                window.renderCalendar();
+                window.updateCharts('day');
             }
         }
 
         window.renderInventory = function() {
             const tbody = document.getElementById('inventoryBody');
+            if (!inventory || inventory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Cargando inventario...</td></tr>';
+                return;
+            }
+
             tbody.innerHTML = inventory.map(item => {
                 let status = 'status-ok', statusText = '✅ OK';
-                if (item.cantidad === 0) { status = 'status-out'; statusText = '❌ Agotado'; }
-                else if (item.cantidad < 5) { status = 'status-low'; statusText = '⚠️ Bajo Stock'; }
-                let precio = currentProfile === 'doctora' ? item.precioDoctora : item.precioZensavita;
-                return `<tr><td><strong>${item.nombre}</strong></td><td>${item.cantidad}</td><td>$${(precio * 1000).toLocaleString('es-CO')}</td><td><span class="status-badge ${status}">${statusText}</span></td></tr>`;
+                const qty = item.cantidad || 0;
+                if (qty === 0) { status = 'status-out'; statusText = '❌ Agotado'; }
+                else if (qty < 5) { status = 'status-low'; statusText = '⚠️ Bajo Stock'; }
+
+                const precio = currentProfile === 'doctora' ? (item.precio_doctora || item.precio || 0) : (item.precio_zensavita || item.precio || 0);
+
+                return `<tr>
+                    <td>${item.sku}</td>
+                    <td><strong>${item.nombre}</strong></td>
+                    <td>${qty}</td>
+                    <td>$${precio.toLocaleString('es-CO')}</td>
+                    <td><span class="status-badge ${status}">${statusText}</span></td>
+                </tr>`;
             }).join('');
         }
 
@@ -417,125 +482,284 @@
         }
 
         window.renderManagement = function() {
-            document.getElementById('managementBody').innerHTML = inventory.map((item) => `
+            const body = document.getElementById('managementBody');
+            if (!inventory || inventory.length === 0) {
+                body.innerHTML = '<div style="text-align: center; color: #999; padding: 2rem;">No hay productos</div>';
+                return;
+            }
+
+            body.innerHTML = inventory.map(item => `
                 <div class="product-row">
+                    <div>${item.sku}</div>
                     <div><strong>${item.nombre}</strong></div>
-                    <input type="number" min="0" value="${item.cantidad}" onchange="window.updateQty('${item.sku}', this.value)">
-                    <input type="number" min="0" step="0.1" value="${item.precio}" disabled style="background: var(--accent);">
-                    <button class="btn btn-secondary" onclick="window.deleteProduct('${item.sku}')">❌ Eliminar</button>
+                    <input type="number" min="0" value="${item.cantidad}" onchange="window.updateQty(${item.id}, this.value)">
+                    <input type="number" min="0" step="0.1" value="${item.precio_zensavita}" disabled style="background: var(--accent);">
+                    <input type="number" min="0" step="0.1" value="${item.precio_doctora}" disabled style="background: var(--accent);">
+                    <button class="btn btn-danger btn-small" onclick="window.deleteProduct(${item.id})">❌</button>
                 </div>
             `).join('');
         }
 
-        window.updateQty = async function(sku, val) {
+        window.saveNewProduct = async function() {
+            const nombre = document.getElementById('newNombre').value.trim();
+            const cantidad = parseInt(document.getElementById('newCantidad').value) || 0;
+            const precio = parseFloat(document.getElementById('newPrecio').value) || 0;
+            const precioDoc = parseFloat(document.getElementById('newPrecioDoc').value) || 0;
+
+            if (!nombre) {
+                showNotification('❌ Ingresa nombre del producto', 'error');
+                return;
+            }
+
             try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'updateQty', sku, qty: parseInt(val), profile: currentProfile })
-                });
-                showNotification('✅ Cantidad actualizada', 'success');
-                syncData();
+                const { data, error } = await supabase
+                    .from('inventario')
+                    .insert([{
+                        nombre,
+                        cantidad,
+                        precio,
+                        precio_doctora: precioDoc,
+                        precio_zensavita: precio
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                showNotification('✅ Producto agregado', 'success');
+                document.getElementById('newNombre').value = '';
+                document.getElementById('newCantidad').value = '1';
+                document.getElementById('newPrecio').value = '0';
+                document.getElementById('newPrecioDoc').value = '0';
+
+                await syncData();
+                window.renderManagement();
             } catch (err) {
-                showNotification('❌ Error actualizando', 'error');
+                showNotification(`❌ Error: ${err.message}`, 'error');
             }
         }
 
-        window.deleteProduct = function(sku) {
-            if (confirm(`¿Eliminar producto?`)) {
-                const idx = inventory.findIndex(p => p.sku === sku);
-                if (idx >= 0) {
-                    inventory.splice(idx, 1);
-                    renderManagement();
-                    window.renderInventory();
-                    showNotification('✅ Eliminado', 'success');
-                }
+        window.updateQty = async function(id, valor) {
+            try {
+                const { error } = await supabase
+                    .from('inventario')
+                    .update({ cantidad: parseInt(valor) })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showNotification('✅ Cantidad actualizada', 'success');
+                await syncData();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
             }
         }
 
-        window.openAddProductModal = function() {
-            document.getElementById('addProductModal').classList.add('active');
+        window.deleteProduct = async function(id) {
+            if (!confirm('¿Eliminar producto?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('inventario')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                showNotification('✅ Producto eliminado', 'success');
+                await syncData();
+                window.renderManagement();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
         }
 
-        window.closeAddProductModal = function() {
-            document.getElementById('addProductModal').classList.remove('active');
-            document.getElementById('newProductSku').value = '';
-            document.getElementById('newProductName').value = '';
-            document.getElementById('newProductQty').value = '1';
-            document.getElementById('newProductPrice').value = '0';
-        }
-
-        window.saveNewProduct = function() {
-            const sku = document.getElementById('newProductSku').value;
-            const nombre = document.getElementById('newProductName').value;
-            const cantidad = parseInt(document.getElementById('newProductQty').value) || 1;
-            const precio = parseFloat(document.getElementById('newProductPrice').value) || 0;
-            if (!sku || !nombre) { showNotification('❌ Campos requeridos', 'error'); return; }
-            inventory.push({ sku, nombre, cantidad, precio, precioZensavita: precio, precioDoctora: precio });
-            renderManagement();
-            window.renderInventory();
-            window.closeAddProductModal();
-            showNotification('✅ Producto agregado', 'success');
-        }
-
-        window.searchProductsForSale = function() {
-            const search = document.getElementById('productSearch').value;
+        window.searchProducts = function() {
+            const search = document.getElementById('productSearch').value.toLowerCase();
             const suggestions = document.getElementById('productSuggestions');
-            if (search.length < 1) { suggestions.innerHTML = ''; return; }
-            const results = inventory.filter(p => p.nombre.toLowerCase().includes(search.toLowerCase())).slice(0, 8);
+
+            if (search.length < 2) {
+                suggestions.style.display = 'none';
+                return;
+            }
+
+            const results = inventory.filter(p =>
+                p.nombre.toLowerCase().includes(search) && p.cantidad > 0
+            ).slice(0, 8);
+
+            if (results.length === 0) {
+                suggestions.innerHTML = '<div class="suggestion-item">No hay productos disponibles</div>';
+                suggestions.style.display = 'block';
+                return;
+            }
+
             suggestions.innerHTML = results.map(p => {
-                let precio = currentProfile === 'doctora' ? p.precioDoctora : p.precioZensavita;
-                return `<div style="padding: 0.75rem; background: var(--accent); border-radius: 4px; margin: 0.3rem 0; cursor: pointer;" onclick="window.selectProductForSale('${p.sku}', '${p.nombre}', ${p.cantidad}, ${precio})"><strong>${p.nombre}</strong> (${p.cantidad} disponibles) - $${(precio * 1000).toLocaleString('es-CO')}</div>`;
+                const precio = currentProfile === 'doctora' ? p.precio_doctora : p.precio_zensavita;
+                return `<div class="suggestion-item" onclick="window.selectProduct(${p.id}, '${p.nombre}', ${p.cantidad}, ${precio})">
+                    <strong>${p.nombre}</strong> (${p.sku})<br>
+                    <small>${p.cantidad} disponibles - $${precio.toLocaleString('es-CO')}</small>
+                </div>`;
             }).join('');
+
+            suggestions.style.display = 'block';
         }
 
-        window.selectProductForSale = function(sku, nombre, disponible, precio) {
-            selectedProduct = { sku, nombre, disponible, precio };
+        window.selectProduct = function(id, nombre, disponible, precio) {
+            selectedProduct = { id, nombre, disponible, precio };
             document.getElementById('productSearch').value = nombre;
+            document.getElementById('productQty').value = '1';
+            document.getElementById('productQty').max = disponible;
             document.getElementById('productPrice').value = precio.toFixed(2);
-            document.getElementById('productSuggestions').innerHTML = '';
-            document.getElementById('productOptionsRow').style.display = 'grid';
-            document.getElementById('addProductBtn').style.display = 'block';
+            document.getElementById('productDetails').innerHTML = `
+                <div style="background: var(--accent); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; color: var(--primary-dark);">
+                    ${nombre} - $${precio.toLocaleString('es-CO')}
+                </div>
+            `;
+            document.getElementById('productSuggestions').style.display = 'none';
+            document.getElementById('productOptionsSection').style.display = 'block';
+            document.getElementById('productQty').focus();
         }
 
         window.addProductToCart = function() {
+            if (!selectedProduct) {
+                showNotification('❌ Selecciona un producto', 'error');
+                return;
+            }
+
             const qty = parseInt(document.getElementById('productQty').value) || 0;
-            if (qty <= 0) { showNotification('❌ Cantidad inválida', 'error'); return; }
-            if (qty > selectedProduct.disponible) { showNotification(`❌ Máximo: ${selectedProduct.disponible}`, 'error'); return; }
-            cart.push({ sku: selectedProduct.sku, nombre: selectedProduct.nombre, cantidad: qty, precio_unitario: selectedProduct.precio, subtotal: qty * selectedProduct.precio });
-            window.renderCart();
+
+            if (qty <= 0) {
+                showNotification('❌ Cantidad debe ser mayor a 0', 'error');
+                return;
+            }
+
+            if (qty > selectedProduct.disponible) {
+                showNotification(`❌ Solo hay ${selectedProduct.disponible} disponibles`, 'error');
+                return;
+            }
+
+            cart.push({
+                id: selectedProduct.id,
+                nombre: selectedProduct.nombre,
+                cantidad: qty,
+                precio_unitario: selectedProduct.precio,
+                subtotal: qty * selectedProduct.precio
+            });
+
+            window.renderCartSummary();
             document.getElementById('productSearch').value = '';
-            document.getElementById('productQty').value = '1';
-            document.getElementById('productOptionsRow').style.display = 'none';
-            document.getElementById('addProductBtn').style.display = 'none';
+            document.getElementById('productOptionsSection').style.display = 'none';
+            document.getElementById('productSuggestions').style.display = 'none';
+            selectedProduct = null;
+
+            showNotification('✅ Producto agregado al carrito', 'success');
         }
 
-        window.renderCart = function() {
+        window.renderCartSummary = function() {
+            const summary = document.getElementById('cartSummary');
+            const clientName = document.getElementById('clientName').value || 'Cliente';
+            const clientId = document.getElementById('clientId').value || 'Cédula';
+
             if (cart.length === 0) {
-                document.getElementById('cartItemsContainer').style.display = 'none';
+                summary.innerHTML = '<p style="color: #999; text-align: center;">Selecciona productos para empezar</p>';
+                document.getElementById('cartTotalDiv').style.display = 'none';
                 document.getElementById('registerSaleBtn').style.display = 'none';
                 return;
             }
+
             let total = 0;
-            document.getElementById('cartItems').innerHTML = cart.map((item, idx) => {
+            let html = `
+                <div style="margin-bottom: 1rem; padding: 1rem; background: var(--accent); border-radius: 8px;">
+                    <strong>👤 ${clientName}</strong><br>
+                    <small>Cédula: ${clientId}</small>
+                </div>
+            `;
+
+            html += cart.map((item, idx) => {
                 total += item.subtotal;
-                return `<div class="cart-item"><strong>${item.nombre}</strong><div>${item.cantidad}x</div><div>$${(item.subtotal * 1000).toLocaleString('es-CO')}</div><button class="btn btn-danger" style="padding: 0.4rem;" onclick="window.removeCart(${idx})">❌</button></div>`;
+                return `
+                    <div class="cart-item">
+                        <div>
+                            <strong>${item.nombre}</strong><br>
+                            <small>${item.cantidad}x $${item.precio_unitario.toLocaleString('es-CO')}</small>
+                        </div>
+                        <div>
+                            <strong>$${item.subtotal.toLocaleString('es-CO')}</strong>
+                            <button class="btn btn-danger btn-small" onclick="window.removeFromCart(${idx})">❌</button>
+                        </div>
+                    </div>
+                `;
             }).join('');
-            document.getElementById('cartTotal').textContent = (total * 1000).toLocaleString('es-CO');
-            document.getElementById('cartItemsContainer').style.display = 'block';
+
+            summary.innerHTML = html;
+            document.getElementById('cartTotal').textContent = total.toLocaleString('es-CO');
+            document.getElementById('cartTotalDiv').style.display = 'block';
             document.getElementById('registerSaleBtn').style.display = 'block';
         }
 
-        window.removeCart = function(idx) {
+        window.removeFromCart = function(idx) {
             cart.splice(idx, 1);
-            window.renderCart();
+            window.renderCartSummary();
+        }
+
+        window.addSpecialSale = async function() {
+            const clientName = document.getElementById('clientName').value.trim();
+            const clientId = document.getElementById('clientId').value.trim();
+            const totalEspecial = parseFloat(document.getElementById('totalVentaEspecial').value) || 0;
+
+            if (!clientName || !clientId) {
+                showNotification('❌ Ingresa nombre y cédula del cliente', 'error');
+                return;
+            }
+
+            if (totalEspecial <= 0) {
+                showNotification('❌ Ingresa un valor total válido', 'error');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('ventas')
+                    .insert([{
+                        cliente: clientName,
+                        cedula: clientId,
+                        productos: [],
+                        total: totalEspecial,
+                        perfil: 'doctora',
+                        fecha: new Date().toISOString().split('T')[0],
+                        tipo_venta: 'especial'
+                    }]);
+
+                if (error) throw error;
+
+                showNotification('✅ Venta registrada', 'success');
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientId').value = '';
+                document.getElementById('totalVentaEspecial').value = '';
+                window.renderCartSummary();
+
+                await syncData();
+                setTimeout(() => window.switchTab('ingresos'), 500);
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
         }
 
         window.confirmSale = function() {
-            const clientName = document.getElementById('clientName').value;
-            const clientId = document.getElementById('clientId').value;
-            if (!clientName || !clientId || cart.length === 0) { showNotification('❌ Completa campos', 'error'); return; }
+            const clientName = document.getElementById('clientName').value.trim();
+            const clientId = document.getElementById('clientId').value.trim();
+
+            if (!clientName || !clientId || cart.length === 0) {
+                showNotification('❌ Completa todos los campos', 'error');
+                return;
+            }
+
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
-            document.getElementById('confirmMessage').textContent = `¿Confirmar venta a ${clientName} por $${(total * 1000).toLocaleString('es-CO')}?`;
+            const productList = cart.map(p => `${p.nombre} (${p.cantidad}x)`).join(', ');
+
+            document.getElementById('confirmMessage').innerHTML = `
+                <strong>Cliente:</strong> ${clientName} (${clientId})<br>
+                <strong>Productos:</strong> ${productList}<br><br>
+                <strong style="font-size: 1.2rem;">Total: $${total.toLocaleString('es-CO')}</strong><br><br>
+                ¿Confirmas esta venta?
+            `;
             document.getElementById('confirmModal').classList.add('active');
         }
 
@@ -547,30 +771,68 @@
             const clientName = document.getElementById('clientName').value;
             const clientId = document.getElementById('clientId').value;
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+
             try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'addSale', profile: currentProfile, cliente: clientName, cedula: clientId, productos: cart, total })
-                });
+                const { error: saleError } = await supabase
+                    .from('ventas')
+                    .insert([{
+                        cliente: clientName,
+                        cedula: clientId,
+                        productos: cart,
+                        total,
+                        perfil: currentProfile,
+                        fecha: new Date().toISOString().split('T')[0]
+                    }]);
+
+                if (saleError) throw saleError;
+
+                for (const item of cart) {
+                    const producto = inventory.find(p => p.id === item.id);
+                    if (producto) {
+                        const nuevaCantidad = Math.max(0, producto.cantidad - item.cantidad);
+                        const { error: updateError } = await supabase
+                            .from('inventario')
+                            .update({ cantidad: nuevaCantidad })
+                            .eq('id', item.id);
+
+                        if (updateError) throw updateError;
+                    }
+                }
+
+                showNotification('✅ Venta registrada exitosamente', 'success');
                 document.getElementById('clientName').value = '';
                 document.getElementById('clientId').value = '';
                 cart = [];
-                window.renderCart();
+                window.renderCartSummary();
                 window.closeConfirmModal();
-                showNotification('✅ Venta registrada', 'success');
-                syncData();
+
+                await syncData();
                 setTimeout(() => window.switchTab('ingresos'), 500);
             } catch (err) {
-                showNotification('❌ Error', 'error');
+                showNotification(`❌ Error: ${err.message}`, 'error');
             }
         }
 
         async function loadSales() {
             try {
-                const response = await fetch(`${API_URL}?action=getSales&profile=${currentProfile}`);
-                const data = await response.json();
-                ventas = data || [];
-                renderSalesList();
+                const { data, error } = await supabase
+                    .from('ventas')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                ventas = (data || []).map(venta => ({
+                    id: venta.id,
+                    cliente: venta.cliente || 'Sin nombre',
+                    cedula: venta.cedula || '',
+                    productos: venta.productos || [],
+                    total: parseFloat(venta.total || 0),
+                    perfil: venta.perfil || '',
+                    fecha: venta.fecha || new Date().toISOString().split('T')[0]
+                }));
+
+                window.renderSalesList();
             } catch (err) {
                 console.error('Error:', err);
             }
@@ -578,16 +840,49 @@
 
         function renderSalesList() {
             const list = document.getElementById('salesList');
-            if (ventas.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas</p>'; return; }
-            list.innerHTML = ventas.map(venta => `<div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between;"><div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha}</small></div><div style="font-weight: 600; color: var(--primary-dark);">$${(venta.total * 1000).toLocaleString('es-CO')}</div></div>`).join('');
+            if (ventas.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas registradas</p>';
+                return;
+            }
+
+            list.innerHTML = ventas.slice(0, 20).map(venta => `
+                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>${venta.cliente}</strong> (${venta.cedula})<br>
+                            <small>${venta.fecha} - ${venta.perfil}</small>
+                        </div>
+                        <div style="font-weight: 600; color: var(--primary-dark);">
+                            $${venta.total.toLocaleString('es-CO')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         window.filterSalesList = function() {
             const cedula = document.getElementById('searchByCedula').value;
             const list = document.getElementById('salesList');
             const filtered = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
-            if (filtered.length === 0) { list.innerHTML = '<p style="text-align: center; color: #999;">Sin resultados</p>'; return; }
-            list.innerHTML = filtered.map(venta => `<div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between;"><div><strong>${venta.cliente}</strong> (${venta.cedula})<br><small>${venta.fecha}</small></div><div style="font-weight: 600; color: var(--primary-dark);">$${(venta.total * 1000).toLocaleString('es-CO')}</div></div>`).join('');
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999;">Sin resultados</p>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(venta => `
+                <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>${venta.cliente}</strong> (${venta.cedula})<br>
+                            <small>${venta.fecha}</small>
+                        </div>
+                        <div style="font-weight: 600; color: var(--primary-dark);">
+                            $${venta.total.toLocaleString('es-CO')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         window.renderCalendar = function() {
@@ -604,7 +899,7 @@
             let html = dayNames.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
 
             for (let i = 0; i < startDate; i++) {
-                html += '<div class="calendar-day other-month"></div>';
+                html += '<div class="calendar-day" style="background: #f5f5f5;"></div>';
             }
 
             for (let day = 1; day <= daysInMonth; day++) {
@@ -615,8 +910,8 @@
 
                 html += `
                     <div class="calendar-day ${hasVentas ? 'has-sales' : ''}" onclick="window.showDayDetails('${dateStr}')">
-                        <div class="day-num">${day}</div>
-                        ${hasVentas ? `<div class="day-sales">${dayVentas.length} venta${dayVentas.length > 1 ? 's' : ''}<br>$${(totalVentas * 1000).toLocaleString('es-CO')}</div>` : ''}
+                        <div style="font-weight: 600;">${day}</div>
+                        ${hasVentas ? `<small>${dayVentas.length} venta(s)<br>$${(totalVentas).toLocaleString('es-CO')}</small>` : ''}
                     </div>
                 `;
             }
@@ -637,7 +932,7 @@
             document.getElementById('dayDetailsList').innerHTML = dayVentas.map(venta => `
                 <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
                     <strong>${venta.cliente}</strong> (${venta.cedula})<br>
-                    <small>Total: $${(venta.total * 1000).toLocaleString('es-CO')}</small>
+                    <small>Perfil: ${venta.perfil} | Total: $${venta.total.toLocaleString('es-CO')}</small>
                 </div>
             `).join('');
 
@@ -656,16 +951,18 @@
 
         window.updateCharts = function(period) {
             const labels = [], data = [];
+
             if (period === 'day') {
                 const hoy = new Date().toISOString().split('T')[0];
                 labels.push(hoy);
-                data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + v.total, 0) * 1000);
+                data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + v.total, 0));
             } else if (period === 'week') {
                 for (let i = 6; i >= 0; i--) {
-                    const fecha = new Date(); fecha.setDate(fecha.getDate() - i);
+                    const fecha = new Date();
+                    fecha.setDate(fecha.getDate() - i);
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000);
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0));
                 }
             } else {
                 const ahora = new Date();
@@ -674,29 +971,43 @@
                     if (fecha.getMonth() !== ahora.getMonth()) break;
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0) * 1000);
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + v.total, 0));
                 }
             }
+
             if (ingresoChart) ingresoChart.destroy();
             ingresoChart = new Chart(document.getElementById('ingresoChart'), {
-                type: 'bar', data: { labels, datasets: [{ label: 'Ingresos', data, backgroundColor: '#A8D5BA', borderColor: '#6BA387', borderWidth: 1 }] },
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Ingresos (COP)',
+                        data,
+                        backgroundColor: '#A8D5BA',
+                        borderColor: '#6BA387',
+                        borderWidth: 1
+                    }]
+                },
                 options: { responsive: true, maintainAspectRatio: true }
             });
+
             window.updateUnitsChart(period);
         }
 
         window.updateUnitsChart = function(period) {
             const labels = [], data = [];
+
             if (period === 'day') {
                 const hoy = new Date().toISOString().split('T')[0];
                 labels.push(hoy);
-                data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + (JSON.parse(v.productos || '[]')).reduce((p, item) => p + item.cantidad, 0), 0));
+                data.push(ventas.filter(v => v.fecha === hoy).reduce((s, v) => s + (v.productos || []).reduce((p, item) => p + (item.cantidad || 0), 0), 0));
             } else if (period === 'week') {
                 for (let i = 6; i >= 0; i--) {
-                    const fecha = new Date(); fecha.setDate(fecha.getDate() - i);
+                    const fecha = new Date();
+                    fecha.setDate(fecha.getDate() - i);
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + (JSON.parse(v.productos || '[]')).reduce((p, item) => p + item.cantidad, 0), 0));
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + (v.productos || []).reduce((p, item) => p + (item.cantidad || 0), 0), 0));
                 }
             } else {
                 const ahora = new Date();
@@ -705,12 +1016,25 @@
                     if (fecha.getMonth() !== ahora.getMonth()) break;
                     const fechaStr = fecha.toISOString().split('T')[0];
                     labels.push(fechaStr);
-                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + (JSON.parse(v.productos || '[]')).reduce((p, item) => p + item.cantidad, 0), 0));
+                    data.push(ventas.filter(v => v.fecha === fechaStr).reduce((s, v) => s + (v.productos || []).reduce((p, item) => p + (item.cantidad || 0), 0), 0));
                 }
             }
+
             if (unitsChart) unitsChart.destroy();
             unitsChart = new Chart(document.getElementById('unitsChart'), {
-                type: 'line', data: { labels, datasets: [{ label: 'Unidades', data, borderColor: '#7DCFE8', backgroundColor: 'rgba(184, 230, 240, 0.1)', borderWidth: 2, tension: 0.4, fill: true }] },
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Unidades Vendidas',
+                        data,
+                        borderColor: '#7DCFE8',
+                        backgroundColor: 'rgba(184, 230, 240, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
                 options: { responsive: true, maintainAspectRatio: true }
             });
         }
@@ -723,7 +1047,7 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        console.log('✅ Zensavita LISTO - Google Sheets conectado');
+        console.log('✅ Zensavita LISTO - Supabase conectado');
     </script>
 </body>
 </html>
