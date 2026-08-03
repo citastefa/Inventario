@@ -150,10 +150,10 @@
     <div class="profile-selector" id="profileSelector">
         <div class="profile-card">
             <h1>🌿 Zensavita</h1>
-            <p>Sistema de Gestión de Inventario y Ventas</p>
+            <p>Sistema de Gestión Integral</p>
             <div class="profile-buttons">
                 <button class="btn-profile doctora" onclick="window.loginProfile('doctora')">👨‍⚕️ Doctora Teresa</button>
-                <button class="btn-profile zensavita" onclick="window.loginProfile('zensavita')">🏪 Zensavita</button>
+                <button class="btn-profile zensavita" onclick="window.loginProfile('agenda')">📅 Agenda de Citas</button>
             </div>
         </div>
     </div>
@@ -168,10 +168,11 @@
             </div>
         </header>
 
-        <div class="nav-tabs">
+        <div class="nav-tabs" id="navTabs">
             <button class="nav-tab active" onclick="window.switchTab('inventario')">📦 Inventario</button>
             <button class="nav-tab" onclick="window.switchTab('gestion')">⚙️ Gestión</button>
-            <button class="nav-tab" onclick="window.switchTab('venta')">💰 Registrar Venta</button>
+            <button class="nav-tab" onclick="window.switchTab('ordenes')">📋 Órdenes</button>
+            <button class="nav-tab" onclick="window.switchTab('venta')">💰 Crear Orden</button>
             <button class="nav-tab" onclick="window.switchTab('ingresos')">📊 Ingresos</button>
         </div>
 
@@ -250,10 +251,22 @@
                 </div>
             </div>
 
+            <div class="section" id="ordenes">
+                <h2>📋 Órdenes Pendientes</h2>
+                <div class="form-section">
+                    <label for="searchOrders">Buscar por Nombre o Teléfono</label>
+                    <input type="text" id="searchOrders" placeholder="Ingresa nombre o teléfono..." onkeyup="window.filterOrdersList()">
+                </div>
+                <div class="form-section">
+                    <h3>Órdenes Registradas</h3>
+                    <div id="ordersList"></div>
+                </div>
+            </div>
+
             <div class="section" id="venta">
                 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
                     <div>
-                        <h2>💰 Registrar Venta</h2>
+                        <h2>💰 Crear Orden</h2>
                         <div class="form-section">
                             <div class="form-row">
                                 <div class="form-group">
@@ -261,8 +274,8 @@
                                     <input type="text" id="clientName" placeholder="Ej: Juan Pérez">
                                 </div>
                                 <div class="form-group">
-                                    <label for="clientId">Cédula</label>
-                                    <input type="text" id="clientId" placeholder="Ej: 1234567890">
+                                    <label for="clientPhone">Teléfono</label>
+                                    <input type="text" id="clientPhone" placeholder="Ej: 3001234567">
                                 </div>
                             </div>
                         </div>
@@ -312,7 +325,7 @@
                         <div class="cart-total" id="cartTotalDiv" style="display: none;">
                             Total: $<span id="cartTotal">0</span>
                         </div>
-                        <button class="btn btn-primary btn-full" id="registerSaleBtn" style="display: none; margin-top: 1rem;" onclick="window.confirmSale()">✅ Registrar Venta</button>
+                        <button class="btn btn-primary btn-full" id="registerSaleBtn" style="display: none; margin-top: 1rem;" onclick="window.confirmCreateOrder()">✅ Crear Orden</button>
                     </div>
                 </div>
             </div>
@@ -357,12 +370,95 @@
                 </div>
 
                 <div class="form-section">
-                    <label for="searchByCedula">Buscar Venta por Cédula</label>
-                    <input type="text" id="searchByCedula" placeholder="Ingresa la cédula..." onkeyup="window.filterSalesList()">
+                    <label for="searchByCedula">Buscar Venta por Nombre o Teléfono</label>
+                    <input type="text" id="searchByCedula" placeholder="Ingresa el nombre o teléfono..." onkeyup="window.filterSalesList()">
                 </div>
                 <div class="form-section">
                     <h3>Últimas Ventas</h3>
                     <div id="salesList"></div>
+                </div>
+            </div>
+
+            <div class="section" id="calendario">
+                <h2>📅 Calendario de Citas</h2>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button onclick="window.prevCalendarMonth()">← Mes Anterior</button>
+                        <h3 id="calendarMonthCitas" style="margin: 0;"></h3>
+                        <button onclick="window.nextCalendarMonth()">Mes Siguiente →</button>
+                    </div>
+                    <div class="calendar-grid" id="citasCalendarGrid"></div>
+                </div>
+
+                <div class="form-section" id="dayDetailsCitas" style="display: none; margin-top: 2rem;">
+                    <h3 id="dayDetailsTitleCitas"></h3>
+                    <div id="dayDetailsCitasList"></div>
+                </div>
+            </div>
+
+            <div class="section" id="agendar-cita">
+                <h2>➕ Agendar Nueva Cita</h2>
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="citaClienteName">Nombre Cliente</label>
+                            <input type="text" id="citaClienteName" placeholder="Ej: Juan Pérez" onkeyup="window.checkClienteConocido()">
+                            <small id="clienteConocidoMsg" style="color: var(--primary-dark); margin-top: 0.5rem; display: none;"></small>
+                        </div>
+                        <div class="form-group">
+                            <label for="citaClientePhone">Teléfono</label>
+                            <input type="text" id="citaClientePhone" placeholder="Ej: 3001234567">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="citaFecha">Fecha</label>
+                            <input type="date" id="citaFecha" onchange="window.loadAvailableHours()">
+                            <small id="diaNoDisponibleMsg" style="color: var(--error); margin-top: 0.5rem; display: none;">Este día no hay citas disponibles (solo Lunes, Martes, Miércoles)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="citaHora">Hora</label>
+                            <select id="citaHora">
+                                <option value="">-- Selecciona una hora --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="citaTipo">Tipo de Cita</label>
+                            <select id="citaTipo">
+                                <option value="Primera cita">Primera cita</option>
+                                <option value="Revisión">Revisión</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="citaNotas">Notas Especiales (opcional)</label>
+                        <textarea id="citaNotas" placeholder="Ingresa cualquier nota adicional..." style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit; resize: vertical; min-height: 80px;"></textarea>
+                    </div>
+
+                    <button class="btn btn-primary btn-full" onclick="window.agendarCita()">✅ Agendar Cita</button>
+                </div>
+            </div>
+
+            <div class="section" id="historial-citas">
+                <h2>📋 Historial de Citas</h2>
+                <div class="form-section">
+                    <label for="searchCitas">Buscar por Nombre o Teléfono</label>
+                    <input type="text" id="searchCitas" placeholder="Ingresa nombre o teléfono..." onkeyup="window.filterCitasList()">
+                </div>
+
+                <div class="form-section">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <button class="chart-btn active" onclick="window.filterCitasByStatus('todas')">Todas</button>
+                        <button class="chart-btn" onclick="window.filterCitasByStatus('pendiente')">🟡 Pendientes</button>
+                        <button class="chart-btn" onclick="window.filterCitasByStatus('pagada')">🟢 Pagadas</button>
+                        <button class="chart-btn" onclick="window.filterCitasByStatus('vencida')">🔴 Vencidas</button>
+                    </div>
+                    <div id="citasHistorialList"></div>
                 </div>
             </div>
         </div>
@@ -370,11 +466,11 @@
 
     <div class="modal" id="confirmModal">
         <div class="modal-content">
-            <h2>Confirmar Venta</h2>
+            <h2>Confirmar Orden</h2>
             <p id="confirmMessage"></p>
             <div class="modal-buttons">
                 <button class="btn-cancel" onclick="window.closeConfirmModal()">Cancelar</button>
-                <button class="btn-confirm" onclick="window.saveSale()">Confirmar</button>
+                <button class="btn-confirm" onclick="window.createOrder()">Confirmar</button>
             </div>
         </div>
     </div>
@@ -407,6 +503,32 @@
         </div>
     </div>
 
+    <div class="modal" id="confirmOrderSaleModal">
+        <div class="modal-content">
+            <h2>Confirmar Orden como Venta</h2>
+            <p id="confirmOrderMessage"></p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="window.closeConfirmOrderSaleModal()">Cancelar</button>
+                <button class="btn-confirm" onclick="window.confirmOrderAsSale()">Confirmar Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="orderDetailsModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0;">Detalles de Orden</h2>
+                <button class="btn-logout" onclick="document.getElementById('orderDetailsModal').classList.remove('active')" style="padding: 0.4rem 0.8rem; font-size: 1.2rem;">✕</button>
+            </div>
+            <div id="orderDetailsContent" style="margin: 1.5rem 0; max-height: 400px; overflow-y: auto;"></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="document.getElementById('orderDetailsModal').classList.remove('active')">Cerrar</button>
+                <button class="btn-primary" onclick="window.showConfirmOrderSaleModal()">✅ Marcar como Vendida</button>
+                <button class="btn-danger" onclick="window.deleteOrder()">🗑️ Eliminar Orden</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://rjaatfbxixnccvnxyhrt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqYWF0ZmJ4aXhuY2N2bnh5aHJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5ODU1NTgsImV4cCI6MjEwMDU2MTU1OH0.qw_KkOl6dNAJMuG22skW-mYSdh_UQKJ3RjMplgeaVU8';
@@ -416,12 +538,17 @@
         let currentProfile = null;
         let inventory = [];
         let ventas = [];
+        let ordenes = [];
+        let citas = [];
         let selectedProduct = null;
         let cart = [];
         let ingresoChart = null;
         let unitsChart = null;
         let syncInterval = null;
         let calendarDate = new Date();
+        let calendarDateCitas = new Date();
+        let selectedOrderId = null;
+        let citasFilterStatus = 'todas';
 
         window.loginProfile = async function(profile) {
             // Esperar a que Supabase esté listo
@@ -439,7 +566,10 @@
             currentProfile = profile;
             document.getElementById('profileSelector').style.display = 'none';
             document.getElementById('mainApp').classList.add('active');
-            document.getElementById('profileBadge').textContent = profile === 'doctora' ? '👨‍⚕️ Doctora Teresa' : '🏪 Zensavita';
+
+            let badgeText = '👨‍⚕️ Doctora Teresa';
+            if (profile === 'agenda') badgeText = '📅 Agenda de Citas';
+            document.getElementById('profileBadge').textContent = badgeText;
 
             if (profile === 'doctora') {
                 document.getElementById('specialSection').style.display = 'block';
@@ -447,8 +577,18 @@
                 document.getElementById('specialSection').style.display = 'none';
             }
 
-            await syncData();
-            syncInterval = setInterval(syncData, 3000);
+            if (profile === 'agenda') {
+                window.updateNavTabsForAgenda();
+                await loadCitas();
+                syncInterval = setInterval(() => {
+                    loadCitas();
+                    window.checkCitasVencidas();
+                }, 60000);
+            } else {
+                window.updateNavTabsForDoctora();
+                await syncData();
+                syncInterval = setInterval(syncData, 3000);
+            }
         }
 
         window.logoutNow = function() {
@@ -483,7 +623,7 @@
                     precio_zensavita: parseFloat(item.precio_zensavita || item.precio || 0)
                 }));
 
-                window.renderInventory();
+                window.renderInventoryWithFilter();
 
                 indicator.textContent = '✅ Sincronizado';
                 indicator.classList.remove('syncing');
@@ -505,6 +645,9 @@
 
             if (tab === 'gestion') {
                 window.renderManagement();
+            } else if (tab === 'ordenes') {
+                await loadOrders();
+                window.renderOrdersList();
             } else if (tab === 'venta') {
                 document.getElementById('cartSummary').innerHTML = '<p style="color: #999; text-align: center;">Selecciona productos para empezar</p>';
                 cart = [];
@@ -512,7 +655,69 @@
                 await loadSales();
                 window.renderCalendar();
                 window.updateCharts('day');
+            } else if (tab === 'calendario') {
+                await loadCitas();
+                window.renderCalendarCitas();
+            } else if (tab === 'agendar-cita') {
+                document.getElementById('citaClienteName').value = '';
+                document.getElementById('citaClientePhone').value = '';
+                document.getElementById('citaFecha').value = '';
+                document.getElementById('citaHora').innerHTML = '<option value="">-- Selecciona una hora --</option>';
+                document.getElementById('citaTipo').value = 'Primera cita';
+                document.getElementById('citaNotas').value = '';
+                document.getElementById('clienteConocidoMsg').style.display = 'none';
+            } else if (tab === 'historial-citas') {
+                citasFilterStatus = 'todas';
+                document.querySelectorAll('#historial-citas .chart-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('#historial-citas .chart-btn')[0].classList.add('active');
+                await loadCitas();
+                window.renderCitasHistorial();
             }
+        }
+
+        window.updateNavTabsForDoctora = function() {
+            // Ocultar secciones de agenda
+            document.getElementById('calendario').style.display = 'none';
+            document.getElementById('agendar-cita').style.display = 'none';
+            document.getElementById('historial-citas').style.display = 'none';
+
+            // Mostrar secciones de doctora
+            document.getElementById('inventario').style.display = 'block';
+            document.getElementById('gestion').style.display = 'block';
+            document.getElementById('ordenes').style.display = 'block';
+            document.getElementById('venta').style.display = 'block';
+            document.getElementById('ingresos').style.display = 'block';
+
+            const navTabs = document.getElementById('navTabs');
+            navTabs.innerHTML = `
+                <button class="nav-tab active" onclick="window.switchTab('inventario')">📦 Inventario</button>
+                <button class="nav-tab" onclick="window.switchTab('gestion')">⚙️ Gestión</button>
+                <button class="nav-tab" onclick="window.switchTab('ordenes')">📋 Órdenes</button>
+                <button class="nav-tab" onclick="window.switchTab('venta')">💰 Crear Orden</button>
+                <button class="nav-tab" onclick="window.switchTab('ingresos')">📊 Ingresos</button>
+            `;
+        }
+
+        window.updateNavTabsForAgenda = function() {
+            // Ocultar secciones de doctora
+            document.getElementById('inventario').style.display = 'none';
+            document.getElementById('gestion').style.display = 'none';
+            document.getElementById('ordenes').style.display = 'none';
+            document.getElementById('venta').style.display = 'none';
+            document.getElementById('ingresos').style.display = 'none';
+
+            // Mostrar secciones de agenda
+            document.getElementById('calendario').style.display = 'block';
+            document.getElementById('agendar-cita').style.display = 'block';
+            document.getElementById('historial-citas').style.display = 'block';
+
+            const navTabs = document.getElementById('navTabs');
+            navTabs.innerHTML = `
+                <button class="nav-tab active" onclick="window.switchTab('calendario')">📅 Calendario</button>
+                <button class="nav-tab" onclick="window.switchTab('agendar-cita')">➕ Agendar Cita</button>
+                <button class="nav-tab" onclick="window.switchTab('historial-citas')">📋 Historial</button>
+            `;
+            document.getElementById('calendario').classList.add('active');
         }
 
         window.renderInventory = function() {
@@ -542,9 +747,23 @@
 
         window.filterInventory = function() {
             const search = document.getElementById('searchInventory').value.toLowerCase();
+            if (search === '') {
+                window.renderInventory();
+                return;
+            }
             document.querySelectorAll('#inventoryBody tr').forEach(row => {
                 row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
             });
+        }
+
+        window.renderInventoryWithFilter = function() {
+            window.renderInventory();
+            const search = document.getElementById('searchInventory').value.toLowerCase();
+            if (search) {
+                document.querySelectorAll('#inventoryBody tr').forEach(row => {
+                    row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
+                });
+            }
         }
 
         window.renderManagement = function() {
@@ -783,7 +1002,7 @@
         window.renderCartSummary = function() {
             const summary = document.getElementById('cartSummary');
             const clientName = document.getElementById('clientName').value || 'Cliente';
-            const clientId = document.getElementById('clientId').value || 'Cédula';
+            const clientPhone = document.getElementById('clientPhone').value || 'Teléfono';
 
             if (cart.length === 0) {
                 summary.innerHTML = '<p style="color: #999; text-align: center;">Selecciona productos para empezar</p>';
@@ -796,7 +1015,7 @@
             let html = `
                 <div style="margin-bottom: 1rem; padding: 1rem; background: var(--accent); border-radius: 8px;">
                     <strong>👤 ${clientName}</strong><br>
-                    <small>Cédula: ${clientId}</small>
+                    <small>📱 ${clientPhone}</small>
                 </div>
             `;
 
@@ -829,11 +1048,11 @@
 
         window.addSpecialSale = async function() {
             const clientName = document.getElementById('clientName').value.trim();
-            const clientId = document.getElementById('clientId').value.trim();
+            const clientPhone = document.getElementById('clientPhone').value.trim();
             const totalEspecial = parseFloat(document.getElementById('totalVentaEspecial').value) || 0;
 
-            if (!clientName || !clientId) {
-                showNotification('❌ Ingresa nombre y cédula del cliente', 'error');
+            if (!clientName || !clientPhone) {
+                showNotification('❌ Ingresa nombre y teléfono del cliente', 'error');
                 return;
             }
 
@@ -844,37 +1063,35 @@
 
             try {
                 const { error } = await window.supabaseClient
-                    .from('ventas')
+                    .from('ordenes')
                     .insert([{
                         cliente: clientName,
-                        cedula: clientId,
+                        telefono: clientPhone,
                         productos: [],
                         total: totalEspecial,
-                        perfil: 'doctora',
-                        fecha: new Date().toISOString().split('T')[0],
-                        tipo_venta: 'especial'
+                        perfil: currentProfile
                     }]);
 
                 if (error) throw error;
 
-                showNotification('✅ Venta registrada', 'success');
+                showNotification('✅ Orden especial registrada', 'success');
                 document.getElementById('clientName').value = '';
-                document.getElementById('clientId').value = '';
+                document.getElementById('clientPhone').value = '';
                 document.getElementById('totalVentaEspecial').value = '';
                 window.renderCartSummary();
 
-                await syncData();
-                setTimeout(() => window.switchTab('ingresos'), 500);
+                await loadOrders();
+                setTimeout(() => window.switchTab('ordenes'), 500);
             } catch (err) {
                 showNotification(`❌ Error: ${err.message}`, 'error');
             }
         }
 
-        window.confirmSale = function() {
+        window.confirmCreateOrder = function() {
             const clientName = document.getElementById('clientName').value.trim();
-            const clientId = document.getElementById('clientId').value.trim();
+            const clientPhone = document.getElementById('clientPhone').value.trim();
 
-            if (!clientName || !clientId || cart.length === 0) {
+            if (!clientName || !clientPhone || cart.length === 0) {
                 showNotification('❌ Completa todos los campos', 'error');
                 return;
             }
@@ -883,10 +1100,11 @@
             const productList = cart.map(p => `${p.nombre} (${p.cantidad}x)`).join(', ');
 
             document.getElementById('confirmMessage').innerHTML = `
-                <strong>Cliente:</strong> ${clientName} (${clientId})<br>
+                <strong>Cliente:</strong> ${clientName}<br>
+                <strong>Teléfono:</strong> ${clientPhone}<br>
                 <strong>Productos:</strong> ${productList}<br><br>
-                <strong style="font-size: 1.2rem;">Total: $${total.toLocaleString('es-CO')}</strong><br><br>
-                ¿Confirmas esta venta?
+                <strong style="font-size: 1.2rem;">Total: $${(total * 1000).toLocaleString('es-CO')}</strong><br><br>
+                ¿Confirmas esta orden?
             `;
             document.getElementById('confirmModal').classList.add('active');
         }
@@ -895,30 +1113,88 @@
             document.getElementById('confirmModal').classList.remove('active');
         }
 
-        window.saveSale = async function() {
+        window.createOrder = async function() {
             const clientName = document.getElementById('clientName').value;
-            const clientId = document.getElementById('clientId').value;
+            const clientPhone = document.getElementById('clientPhone').value;
             const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
             try {
+                const { error: orderError } = await window.supabaseClient
+                    .from('ordenes')
+                    .insert([{
+                        cliente: clientName,
+                        telefono: clientPhone,
+                        productos: cart,
+                        total,
+                        perfil: currentProfile
+                    }]);
+
+                if (orderError) throw orderError;
+
+                showNotification('✅ Orden creada exitosamente', 'success');
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientPhone').value = '';
+                cart = [];
+                window.renderCartSummary();
+                window.closeConfirmModal();
+
+                await loadOrders();
+                setTimeout(() => window.switchTab('ordenes'), 500);
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+
+        window.showConfirmOrderSaleModal = function() {
+            if (!selectedOrderId) return;
+
+            const orden = ordenes.find(o => o.id === selectedOrderId);
+            if (!orden) return;
+
+            const productList = orden.productos.map(p => `${p.nombre} (${p.cantidad}x)`).join(', ');
+
+            document.getElementById('confirmOrderMessage').innerHTML = `
+                <strong>Cliente:</strong> ${orden.cliente}<br>
+                <strong>Teléfono:</strong> ${orden.telefono}<br>
+                <strong>Productos:</strong> ${productList}<br><br>
+                <strong style="font-size: 1.2rem;">Total: $${(orden.total * 1000).toLocaleString('es-CO')}</strong><br><br>
+                ¿Confirmas esta venta?
+            `;
+            document.getElementById('orderDetailsModal').classList.remove('active');
+            document.getElementById('confirmOrderSaleModal').classList.add('active');
+        }
+
+        window.closeConfirmOrderSaleModal = function() {
+            document.getElementById('confirmOrderSaleModal').classList.remove('active');
+        }
+
+        window.confirmOrderAsSale = async function() {
+            if (!selectedOrderId) return;
+
+            const orden = ordenes.find(o => o.id === selectedOrderId);
+            if (!orden) return;
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+
                 const { error: saleError } = await window.supabaseClient
                     .from('ventas')
                     .insert([{
-                        cliente: clientName,
-                        cedula: clientId,
-                        productos: cart,
-                        total,
+                        cliente: orden.cliente,
+                        telefono: orden.telefono,
+                        productos: orden.productos,
+                        total: orden.total,
                         perfil: currentProfile,
-                        fecha: new Date().toISOString().split('T')[0]
+                        fecha: today
                     }]);
 
                 if (saleError) throw saleError;
 
-                for (const item of cart) {
+                for (const item of orden.productos) {
                     const producto = inventory.find(p => p.id === item.id);
                     if (producto) {
                         const nuevaCantidad = Math.max(0, producto.cantidad - item.cantidad);
-                        const { error: updateError } = await supabase
+                        const { error: updateError } = await window.supabaseClient
                             .from('inventario')
                             .update({ cantidad: nuevaCantidad })
                             .eq('id', item.id);
@@ -927,18 +1203,136 @@
                     }
                 }
 
-                showNotification('✅ Venta registrada exitosamente', 'success');
-                document.getElementById('clientName').value = '';
-                document.getElementById('clientId').value = '';
-                cart = [];
-                window.renderCartSummary();
-                window.closeConfirmModal();
+                const { error: deleteOrderError } = await window.supabaseClient
+                    .from('ordenes')
+                    .delete()
+                    .eq('id', selectedOrderId)
+                    .eq('perfil', currentProfile);
 
+                if (deleteOrderError) console.error('Delete order error:', deleteOrderError);
+
+                showNotification('✅ Orden confirmada como venta', 'success');
+                window.closeConfirmOrderSaleModal();
+                await loadOrders();
                 await syncData();
-                setTimeout(() => window.switchTab('ingresos'), 500);
+                window.renderOrdersList();
             } catch (err) {
                 showNotification(`❌ Error: ${err.message}`, 'error');
             }
+        }
+
+        window.deleteOrder = async function() {
+            if (!selectedOrderId || !confirm('¿Está seguro de que desea eliminar esta orden?')) return;
+
+            try {
+                const { error } = await window.supabaseClient
+                    .from('ordenes')
+                    .delete()
+                    .eq('id', selectedOrderId);
+
+                if (error) throw error;
+
+                showNotification('✅ Orden eliminada', 'success');
+                document.getElementById('orderDetailsModal').classList.remove('active');
+                await loadOrders();
+                window.renderOrdersList();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+
+        async function loadOrders() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('ordenes')
+                    .select('*')
+                    .eq('perfil', currentProfile)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                ordenes = (data || []).map(orden => ({
+                    id: orden.id,
+                    cliente: orden.cliente || 'Sin nombre',
+                    telefono: orden.telefono || '',
+                    productos: orden.productos || [],
+                    total: parseFloat(orden.total || 0),
+                    perfil: orden.perfil || '',
+                    created_at: orden.created_at || new Date().toISOString()
+                }));
+
+                window.renderOrdersList();
+            } catch (err) {
+                console.error('Error loading orders:', err);
+            }
+        }
+
+        window.renderOrdersList = function() {
+            const searchTerm = document.getElementById('searchOrders').value.toLowerCase();
+            const list = document.getElementById('ordersList');
+
+            const ordersToShow = searchTerm ? ordenes.filter(o =>
+                o.cliente.toLowerCase().includes(searchTerm) ||
+                o.telefono.includes(searchTerm)
+            ) : ordenes;
+
+            if (ordersToShow.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999;">Sin órdenes registradas</p>';
+                return;
+            }
+
+            list.innerHTML = ordersToShow.map(orden => {
+                const fecha = new Date(orden.created_at).toLocaleDateString('es-CO');
+                return `
+                    <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer;" onclick="window.showOrderDetails(${orden.id})">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div>
+                                <strong>${orden.cliente}</strong><br>
+                                <small>📱 ${orden.telefono}</small><br>
+                                <small>${fecha}</small>
+                            </div>
+                            <div style="font-weight: 600; color: var(--primary-dark);">
+                                $${(orden.total * 1000).toLocaleString('es-CO')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.filterOrdersList = function() {
+            window.renderOrdersList();
+        }
+
+        window.showOrderDetails = function(orderId) {
+            const orden = ordenes.find(o => o.id === orderId);
+            if (!orden) return;
+
+            selectedOrderId = orderId;
+            const fecha = new Date(orden.created_at).toLocaleDateString('es-CO', {
+                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            let productList = orden.productos.map(p => `
+                <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                    <strong>${p.nombre}</strong><br>
+                    Cantidad: ${p.cantidad} | Precio: $${(p.precio * 1000).toLocaleString('es-CO')} | Subtotal: $${(p.subtotal * 1000).toLocaleString('es-CO')}
+                </div>
+            `).join('');
+
+            document.getElementById('orderDetailsContent').innerHTML = `
+                <div>
+                    <p><strong>Cliente:</strong> ${orden.cliente}</p>
+                    <p><strong>Teléfono:</strong> ${orden.telefono}</p>
+                    <p><strong>Fecha de Creación:</strong> ${fecha}</p>
+                    <p><strong>Perfil:</strong> ${orden.perfil}</p>
+                    <h4>Productos:</h4>
+                    <div>${productList || '<p>Sin productos</p>'}</div>
+                    <p style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--border);"><strong>Total: $${(orden.total * 1000).toLocaleString('es-CO')}</strong></p>
+                </div>
+            `;
+
+            document.getElementById('orderDetailsModal').classList.add('active');
         }
 
         async function loadSales() {
@@ -946,6 +1340,7 @@
                 const { data, error } = await window.supabaseClient
                     .from('ventas')
                     .select('*')
+                    .eq('perfil', currentProfile)
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
@@ -953,7 +1348,7 @@
                 ventas = (data || []).map(venta => ({
                     id: venta.id,
                     cliente: venta.cliente || 'Sin nombre',
-                    cedula: venta.cedula || '',
+                    telefono: venta.telefono || '',
                     productos: venta.productos || [],
                     total: parseFloat(venta.total || 0),
                     perfil: venta.perfil || '',
@@ -967,10 +1362,13 @@
         }
 
         window.renderSalesList = function() {
-            const cedula = document.getElementById('searchByCedula').value;
+            const search = document.getElementById('searchByCedula').value.toLowerCase();
             const list = document.getElementById('salesList');
 
-            const salesToShow = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
+            const salesToShow = search ? ventas.filter(v =>
+                v.cliente.toLowerCase().includes(search) ||
+                v.telefono.includes(search)
+            ) : ventas;
 
             if (salesToShow.length === 0) {
                 list.innerHTML = '<p style="text-align: center; color: #999;">Sin ventas registradas</p>';
@@ -981,8 +1379,9 @@
                 <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer;" onclick="window.showVentaDetails(${venta.id})">
                     <div style="display: flex; justify-content: space-between;">
                         <div>
-                            <strong>${venta.cliente}</strong> (${venta.cedula})<br>
-                            <small>${venta.fecha} - ${venta.perfil}</small>
+                            <strong>${venta.cliente}</strong><br>
+                            <small>📱 ${venta.telefono}</small><br>
+                            <small>${venta.fecha}</small>
                         </div>
                         <div style="font-weight: 600; color: var(--primary-dark);">
                             $${(venta.total * 1000).toLocaleString('es-CO')}
@@ -993,9 +1392,12 @@
         }
 
         window.filterSalesList = function() {
-            const cedula = document.getElementById('searchByCedula').value;
+            const search = document.getElementById('searchByCedula').value.toLowerCase();
             const list = document.getElementById('salesList');
-            const filtered = cedula ? ventas.filter(v => v.cedula.includes(cedula)) : ventas;
+            const filtered = search ? ventas.filter(v =>
+                v.cliente.toLowerCase().includes(search) ||
+                v.telefono.includes(search)
+            ) : ventas;
 
             if (filtered.length === 0) {
                 list.innerHTML = '<p style="text-align: center; color: #999;">Sin resultados</p>';
@@ -1006,7 +1408,8 @@
                 <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer;" onclick="window.showVentaDetails(${venta.id})">
                     <div style="display: flex; justify-content: space-between;">
                         <div>
-                            <strong>${venta.cliente}</strong> (${venta.cedula})<br>
+                            <strong>${venta.cliente}</strong><br>
+                            <small>📱 ${venta.telefono}</small><br>
                             <small>${venta.fecha}</small>
                         </div>
                         <div style="font-weight: 600; color: var(--primary-dark);">
@@ -1058,13 +1461,13 @@
                 return;
             }
 
-            const fecha = new Date(dateStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const fecha = new Date(dateStr + 'T12:00:00Z').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('dayDetailsTitle').textContent = `Ventas del ${fecha}`;
 
             document.getElementById('dayDetailsList').innerHTML = dayVentas.map(venta => `
                 <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem;">
-                    <strong>${venta.cliente}</strong> (${venta.cedula})<br>
-                    <small>Perfil: ${venta.perfil} | Total: $${venta.total.toLocaleString('es-CO')}</small>
+                    <strong>${venta.cliente}</strong><br>
+                    <small>📱 ${venta.telefono} | Perfil: ${venta.perfil} | Total: $${(venta.total * 1000).toLocaleString('es-CO')}</small>
                 </div>
             `).join('');
 
@@ -1077,7 +1480,7 @@
 
             let productosHTML = '<div style="background: var(--accent); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">';
             productosHTML += `<strong>Cliente:</strong> ${venta.cliente}<br>`;
-            productosHTML += `<strong>Cédula:</strong> ${venta.cedula}<br>`;
+            productosHTML += `<strong>Teléfono:</strong> ${venta.telefono}<br>`;
             productosHTML += `<strong>Perfil:</strong> ${venta.perfil}<br>`;
             productosHTML += `<strong>Fecha:</strong> ${venta.fecha}<br>`;
             productosHTML += '</div>';
@@ -1123,12 +1526,20 @@
                     return;
                 }
 
-                const { error: deleteError } = await window.supabaseClient
+                console.log('🔍 Intentando eliminar venta con ID:', window.currentVentaId, venta);
+
+                const { data: deleteData, error: deleteError } = await window.supabaseClient
                     .from('ventas')
                     .delete()
-                    .eq('id', window.currentVentaId);
+                    .eq('id', window.currentVentaId)
+                    .select();
 
-                if (deleteError) throw deleteError;
+                console.log('📋 Respuesta DELETE:', { deleteData, deleteError });
+
+                if (deleteError) {
+                    console.error('❌ Error en DELETE:', deleteError);
+                    throw new Error(`No se pudo eliminar: ${deleteError.message}`);
+                }
 
                 if (venta.productos && venta.productos.length > 0) {
                     for (const item of venta.productos) {
@@ -1145,17 +1556,20 @@
                     }
                 }
 
-                showNotification('✅ Venta cancelada e inventario restaurado', 'success');
+                showNotification('✅ Venta eliminada e inventario restaurado', 'success');
                 document.getElementById('deletePasswordModal').classList.remove('active');
                 document.getElementById('ventaDetailsModal').classList.remove('active');
 
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 1500));
                 await syncData();
                 await loadSales();
                 window.renderCalendar();
                 window.updateCharts('day');
                 window.renderSalesList();
+
+                console.log('✅ Operación completada exitosamente');
             } catch (err) {
+                console.error('❌ Error completo:', err);
                 showNotification(`❌ Error: ${err.message}`, 'error');
             }
         }
@@ -1277,6 +1691,460 @@
                 } catch (err) {
                     console.error('Error inicializando Supabase:', err);
                 }
+            }
+        }
+
+        // FUNCIONES PARA SISTEMA DE CITAS
+        async function loadCitas() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('citas')
+                    .select('*')
+                    .order('fecha', { ascending: false });
+
+                if (error) throw error;
+
+                citas = (data || []).map(cita => ({
+                    id: cita.id,
+                    cliente_nombre: cita.cliente_nombre || '',
+                    cliente_telefono: cita.cliente_telefono || '',
+                    fecha: cita.fecha || '',
+                    hora: cita.hora || '',
+                    tipo_cita: cita.tipo_cita || 'Primera cita',
+                    estado: cita.estado || 'pendiente',
+                    notas: cita.notas || '',
+                    created_at: cita.created_at || new Date().toISOString()
+                }));
+
+                window.checkCitasVencidas();
+            } catch (err) {
+                console.error('Error loading citas:', err);
+            }
+        }
+
+        window.checkCitasVencidas = async function() {
+            const now = new Date();
+            const citasActualizadas = [];
+
+            for (const cita of citas) {
+                if (cita.estado === 'pendiente') {
+                    const createdAt = new Date(cita.created_at);
+                    const horasDiferencia = (now - createdAt) / (1000 * 60 * 60);
+
+                    if (horasDiferencia > 12) {
+                        const { error } = await window.supabaseClient
+                            .from('citas')
+                            .update({ estado: 'vencida' })
+                            .eq('id', cita.id);
+
+                        if (!error) {
+                            cita.estado = 'vencida';
+                        }
+                        citasActualizadas.push(cita);
+                    }
+                }
+            }
+        }
+
+        window.renderCalendarCitas = function() {
+            const year = calendarDateCitas.getFullYear();
+            const month = calendarDateCitas.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDate = firstDay.getDay();
+
+            document.getElementById('calendarMonthCitas').textContent = calendarDateCitas.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+
+            const calendarGrid = document.getElementById('citasCalendarGrid');
+            let html = '';
+
+            const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sab'];
+            dayHeaders.forEach(day => {
+                html += `<div class="calendar-day-header">${day}</div>`;
+            });
+
+            for (let i = 0; i < startDate; i++) {
+                html += '<div></div>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const citasDelDia = citas.filter(c => c.fecha === dateStr);
+
+                let classNames = 'calendar-day';
+                let statusEmoji = '';
+
+                if (citasDelDia.length > 0) {
+                    const estados = citasDelDia.map(c => c.estado);
+                    if (estados.includes('vencida')) {
+                        classNames += ' has-sales';
+                        statusEmoji = '🔴';
+                    } else if (estados.includes('pendiente')) {
+                        classNames += ' has-sales';
+                        statusEmoji = '🟡';
+                    } else if (estados.includes('pagada')) {
+                        classNames += ' has-sales';
+                        statusEmoji = '🟢';
+                    }
+                }
+
+                html += `<div class="${classNames}" onclick="window.showCitasDelDia('${dateStr}')">
+                    <strong>${day}</strong><br>
+                    ${statusEmoji ? `<small>${citasDelDia.length} ${statusEmoji}</small>` : ''}
+                </div>`;
+            }
+
+            calendarGrid.innerHTML = html;
+        }
+
+        window.showCitasDelDia = function(dateStr) {
+            const citasDelDia = citas.filter(c => c.fecha === dateStr);
+            const fecha = new Date(dateStr + 'T12:00:00Z').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            document.getElementById('dayDetailsTitleCitas').textContent = `Citas del ${fecha}`;
+
+            if (citasDelDia.length === 0) {
+                document.getElementById('dayDetailsCitasList').innerHTML = '<p style="color: #999; text-align: center;">Sin citas este día</p>';
+            } else {
+                document.getElementById('dayDetailsCitasList').innerHTML = citasDelDia.map(cita => {
+                    let statusColor = '#FFC107';
+                    let statusEmoji = '🟡';
+                    if (cita.estado === 'pagada') {
+                        statusColor = '#4CAF50';
+                        statusEmoji = '🟢';
+                    } else if (cita.estado === 'vencida') {
+                        statusColor = '#f44336';
+                        statusEmoji = '🔴';
+                    }
+
+                    return `
+                        <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; border-left: 4px solid ${statusColor};" onclick="window.showCitaDetails(${cita.id})">
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    <strong>${cita.cliente_nombre}</strong> ${statusEmoji}<br>
+                                    <small>📱 ${cita.cliente_telefono}</small><br>
+                                    <small>⏰ ${cita.hora} | ${cita.tipo_cita}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('dayDetailsCitas').style.display = 'block';
+        }
+
+        window.prevCalendarMonth = function() {
+            calendarDateCitas.setMonth(calendarDateCitas.getMonth() - 1);
+            window.renderCalendarCitas();
+        }
+
+        window.nextCalendarMonth = function() {
+            calendarDateCitas.setMonth(calendarDateCitas.getMonth() + 1);
+            window.renderCalendarCitas();
+        }
+
+        window.loadAvailableHours = async function() {
+            const fechaInput = document.getElementById('citaFecha').value;
+            if (!fechaInput) return;
+
+            // Reload citas to get the latest data before filtering
+            await loadCitas();
+
+            const fecha = new Date(fechaInput + 'T00:00:00Z');
+            const diaSemana = fecha.getUTCDay();
+
+            // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sab
+            // Solo Lunes(1), Martes(2), Miércoles(3)
+            if (![1, 2, 3].includes(diaSemana)) {
+                document.getElementById('diaNoDisponibleMsg').style.display = 'block';
+                document.getElementById('citaHora').innerHTML = '<option value="">-- No hay citas disponibles este día --</option>';
+                return;
+            }
+
+            document.getElementById('diaNoDisponibleMsg').style.display = 'none';
+
+            // Generar horas disponibles
+            const horas = [];
+
+            // Mañana: 8:00 - 11:30
+            for (let h = 8; h < 12; h++) {
+                for (let m = 0; m < 60; m += 30) {
+                    if (h === 11 && m > 30) break;
+                    horas.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+                }
+            }
+
+            // Tarde: 14:00 - 17:00 (solo si no es martes)
+            if (diaSemana !== 2) {
+                for (let h = 14; h < 17; h++) {
+                    for (let m = 0; m < 60; m += 30) {
+                        if (h === 17 && m > 0) break;
+                        horas.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+                    }
+                }
+            }
+
+            // Filtrar horas ya ocupadas
+            const horasOcupadas = citas
+                .filter(c => c.fecha === fechaInput)
+                .map(c => c.hora);
+
+            const horasDisponibles = horas.filter(h => !horasOcupadas.includes(h));
+
+            const select = document.getElementById('citaHora');
+            select.innerHTML = '<option value="">-- Selecciona una hora --</option>' +
+                horasDisponibles.map(h => `<option value="${h}">${h}</option>`).join('');
+        }
+
+        window.checkClienteConocido = async function() {
+            const nombre = document.getElementById('citaClienteName').value.trim();
+            if (nombre.length < 2) {
+                document.getElementById('clienteConocidoMsg').style.display = 'none';
+                return;
+            }
+
+            const clienteAnterior = citas.find(c =>
+                c.cliente_nombre.toLowerCase() === nombre.toLowerCase()
+            );
+
+            if (clienteAnterior) {
+                const ultimaCita = citas
+                    .filter(c => c.cliente_nombre.toLowerCase() === nombre.toLowerCase())
+                    .sort((a, b) => new Date(b.fecha + 'T12:00:00Z') - new Date(a.fecha + 'T12:00:00Z'))[0];
+
+                const fechaUltima = new Date(ultimaCita.fecha + 'T12:00:00Z').toLocaleDateString('es-CO');
+                document.getElementById('clienteConocidoMsg').innerHTML =
+                    `✅ Cliente conocido | Última cita: ${fechaUltima}`;
+                document.getElementById('clienteConocidoMsg').style.display = 'block';
+                document.getElementById('citaTipo').value = 'Revisión';
+            } else {
+                document.getElementById('clienteConocidoMsg').style.display = 'none';
+                document.getElementById('citaTipo').value = 'Primera cita';
+            }
+        }
+
+        window.agendarCita = async function() {
+            const nombre = document.getElementById('citaClienteName').value.trim();
+            const telefono = document.getElementById('citaClientePhone').value.trim();
+            const fecha = document.getElementById('citaFecha').value;
+            const hora = document.getElementById('citaHora').value;
+            const tipo = document.getElementById('citaTipo').value;
+            const notas = document.getElementById('citaNotas').value.trim();
+
+            if (!nombre || !telefono || !fecha || !hora) {
+                showNotification('❌ Completa todos los campos requeridos', 'error');
+                return;
+            }
+
+            try {
+                // Double check: verify in database that no other appointment exists at this time and date
+                const { data: existingCita, error: checkError } = await window.supabaseClient
+                    .from('citas')
+                    .select('id')
+                    .eq('fecha', fecha)
+                    .eq('hora', hora)
+                    .limit(1);
+
+                if (checkError) throw checkError;
+
+                if (existingCita && existingCita.length > 0) {
+                    showNotification('❌ Esta hora ya está ocupada. Selecciona otra hora', 'error');
+                    await loadCitas();
+                    window.loadAvailableHours();
+                    return;
+                }
+
+                const { error } = await window.supabaseClient
+                    .from('citas')
+                    .insert([{
+                        cliente_nombre: nombre,
+                        cliente_telefono: telefono,
+                        fecha: fecha,
+                        hora: hora,
+                        tipo_cita: tipo,
+                        estado: 'pendiente',
+                        notas: notas
+                    }]);
+
+                if (error) throw error;
+
+                showNotification('✅ Cita agendada exitosamente', 'success');
+
+                // Clear form fields
+                document.getElementById('citaClienteName').value = '';
+                document.getElementById('citaClientePhone').value = '';
+                document.getElementById('citaFecha').value = '';
+                document.getElementById('citaHora').innerHTML = '<option value="">-- Selecciona una hora --</option>';
+                document.getElementById('citaTipo').value = 'Primera cita';
+                document.getElementById('citaNotas').value = '';
+                document.getElementById('clienteConocidoMsg').style.display = 'none';
+
+                await loadCitas();
+                window.renderCalendarCitas();
+                window.renderCitasHistorial();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+
+        window.renderCitasHistorial = function() {
+            const search = document.getElementById('searchCitas').value.toLowerCase();
+            const list = document.getElementById('citasHistorialList');
+
+            let citasToShow = citas;
+
+            if (citasFilterStatus !== 'todas') {
+                citasToShow = citasToShow.filter(c => c.estado === citasFilterStatus);
+            }
+
+            if (search) {
+                citasToShow = citasToShow.filter(c =>
+                    c.cliente_nombre.toLowerCase().includes(search) ||
+                    c.cliente_telefono.includes(search)
+                );
+            }
+
+            if (citasToShow.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999;">Sin citas</p>';
+                return;
+            }
+
+            list.innerHTML = citasToShow.map(cita => {
+                let statusColor = '#FFC107';
+                let statusEmoji = '🟡';
+                let statusText = 'Pendiente';
+                if (cita.estado === 'pagada') {
+                    statusColor = '#4CAF50';
+                    statusEmoji = '🟢';
+                    statusText = 'Pagada';
+                } else if (cita.estado === 'vencida') {
+                    statusColor = '#f44336';
+                    statusEmoji = '🔴';
+                    statusText = 'Vencida';
+                }
+
+                const fecha = new Date(cita.fecha + 'T12:00:00Z').toLocaleDateString('es-CO');
+
+                return `
+                    <div style="padding: 1rem; background: var(--accent); border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; border-left: 4px solid ${statusColor};" onclick="window.showCitaDetails(${cita.id})">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <strong>${cita.cliente_nombre}</strong> ${statusEmoji}<br>
+                                <small>📱 ${cita.cliente_telefono}</small><br>
+                                <small>📅 ${fecha} a las ${cita.hora}</small><br>
+                                <small style="color: var(--primary-dark); font-weight: 600;">${cita.tipo_cita}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <small style="background: ${statusColor}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">${statusText}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.filterCitasList = function() {
+            window.renderCitasHistorial();
+        }
+
+        window.filterCitasByStatus = function(status) {
+            citasFilterStatus = status;
+            document.querySelectorAll('#historial-citas .chart-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            window.renderCitasHistorial();
+        }
+
+        window.showCitaDetails = function(citaId) {
+            const cita = citas.find(c => c.id === citaId);
+            if (!cita) return;
+
+            const fecha = new Date(cita.fecha + 'T12:00:00Z').toLocaleDateString('es-CO', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            let statusColor = '#FFC107';
+            let statusEmoji = '🟡';
+            if (cita.estado === 'pagada') {
+                statusColor = '#4CAF50';
+                statusEmoji = '🟢';
+            } else if (cita.estado === 'vencida') {
+                statusColor = '#f44336';
+                statusEmoji = '🔴';
+            }
+
+            let html = `
+                <div style="background: ${statusColor}; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <strong>${statusEmoji} ${cita.estado.toUpperCase()}</strong>
+                </div>
+                <div style="background: var(--accent); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <p><strong>Cliente:</strong> ${cita.cliente_nombre}</p>
+                    <p><strong>Teléfono:</strong> ${cita.cliente_telefono}</p>
+                    <p><strong>Fecha:</strong> ${fecha}</p>
+                    <p><strong>Hora:</strong> ${cita.hora}</p>
+                    <p><strong>Tipo:</strong> ${cita.tipo_cita}</p>
+                    ${cita.notas ? `<p><strong>Notas:</strong> ${cita.notas}</p>` : ''}
+                </div>
+                ${cita.estado === 'pendiente' ? `
+                    <button class="btn btn-primary btn-full" onclick="window.markCitaPagada(${cita.id})" style="margin-bottom: 0.5rem;">✅ Marcar como Pagada</button>
+                ` : ''}
+                <button class="btn btn-danger btn-full" onclick="window.deleteCita(${cita.id})">🗑️ Eliminar Cita</button>
+            `;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'citaDetailsModal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0;">Detalles de Cita</h2>
+                        <button class="btn-logout" onclick="document.getElementById('citaDetailsModal').remove()" style="padding: 0.4rem 0.8rem; font-size: 1.2rem;">✕</button>
+                    </div>
+                    <div style="margin: 1.5rem 0; max-height: 400px; overflow-y: auto;">
+                        ${html}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        window.markCitaPagada = async function(citaId) {
+            try {
+                const { error } = await window.supabaseClient
+                    .from('citas')
+                    .update({ estado: 'pagada' })
+                    .eq('id', citaId);
+
+                if (error) throw error;
+
+                showNotification('✅ Cita marcada como pagada', 'success');
+                document.getElementById('citaDetailsModal').remove();
+                await loadCitas();
+                window.renderCitasHistorial();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+
+        window.deleteCita = async function(citaId) {
+            if (!confirm('¿Estás seguro de que deseas eliminar esta cita?')) return;
+
+            try {
+                const { error } = await window.supabaseClient
+                    .from('citas')
+                    .delete()
+                    .eq('id', citaId);
+
+                if (error) throw error;
+
+                showNotification('✅ Cita eliminada', 'success');
+                document.getElementById('citaDetailsModal').remove();
+                await loadCitas();
+                window.renderCalendarCitas();
+                window.renderCitasHistorial();
+            } catch (err) {
+                showNotification(`❌ Error: ${err.message}`, 'error');
             }
         }
 
